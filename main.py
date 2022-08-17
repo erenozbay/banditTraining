@@ -13,14 +13,15 @@ def generateArms(K_list, T_list, numArmDists, alpha):
     return armInstances
 
 
-def generateTwoFartherArms(T_list, numArmDists):
+def generateTwoFartherArms(T_list, numArmDists, pw=1 / 3):
     ncol = 2 * len(T_list)
     armInstances = np.zeros((numArmDists, ncol))
 
     for i in range(numArmDists):
         arms = np.zeros(ncol)
         for j in range(len(T_list)):
-            diff = np.random.uniform(0, 1 / np.power(T_list[j], 1 / 3), 1) + 1 / np.power(T_list[j], 1 / 3)
+            upper = min(0.25, 1 / np.power(T_list[j], pw))
+            diff = np.random.uniform(0, upper, 1) + upper
             first = 0.5 - diff
             second = 0.5 + diff
             arms[j * 2] = first
@@ -105,7 +106,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
         subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
 
     print("Naive UCB1 results:")
-    print("K: " + str(K) + ", and T")
+    print("K: " + str(K) + ", and T: ", end="")
     print(T_list)
     print("Regrets")
     print(regret)
@@ -181,7 +182,7 @@ def ETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
                         empirical_mean[pull] = cumulative_reward[pull] / pullEach
 
                     pull = np.argmax(empirical_mean)
-                    rew = np.random.binomial(1, arms[pull], T - K * pullEach)
+                    rew = np.random.binomial(1, arms[pull], int(T - K * pullEach))
                     cumulative_reward[pull] += sum(rew)
 
                     largestCumRew = max(cumulative_reward)
@@ -201,7 +202,7 @@ def ETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
             subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
 
     print("ETC results:")
-    print("K: " + str(K) + ", and T")
+    print("K: " + str(K) + ", and T: ", end="")
     print(T_list)
     print("Regrets")
     print(regret)
@@ -223,9 +224,13 @@ def ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
 
         regret = np.zeros(numK)
         stError = np.zeros(numK)
+        subOptRewards = np.zeros(numK)
+        subOptRewardsTot = np.zeros(numK)
         for t in range(numK):
             K = K_list[t]
             regret_sim = np.zeros(numInstance)
+            subOptRewards_sim = np.zeros(numInstance)
+            subOptRewardsTot_sim = np.zeros(numInstance)
 
             for a in range(numInstance):
                 firstK = sum(K_list[:(t + 1)]) - K
@@ -239,6 +244,7 @@ def ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
                     indexhigh = np.zeros(K)
                     indexlow = np.zeros(K)
                     cumulative_reward = np.zeros(K)
+                    pullEach = int(np.ceil(np.power(T, 2 / 3)))
 
                     for i in range(T):
                         if i < K:
@@ -258,11 +264,21 @@ def ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
                             # indexhigh[pull] =
                             # indexlow[pull] =
 
+                    largestCumRew = max(cumulative_reward)
+                    interim = [a for i, a in enumerate(cumulative_reward) if a < largestCumRew]
+                    secondLargestCumRew = max(interim)
+
                     regret_sim[a] += max(arms) * T - max(cumulative_reward)
+                    subOptRewards_sim[a] += (largestCumRew - secondLargestCumRew) / (max(arms) * T)
+                    subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
                 regret_sim[a] /= (endSim - startSim)
+                subOptRewards_sim[a] /= (endSim - startSim)
+                subOptRewardsTot_sim[a] /= (endSim - startSim)
 
             regret[t] = np.mean(regret_sim)
             stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
+            subOptRewards[t] = np.mean(subOptRewards_sim)
+            subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
 
     else:  # fix K and vary T values
         K = K_list[0]
@@ -271,9 +287,13 @@ def ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
 
         regret = np.zeros(numT)
         stError = np.zeros(numT)
+        subOptRewards = np.zeros(numT)
+        subOptRewardsTot = np.zeros(numT)
         for t in range(numT):
             T = T_list[t]
             regret_sim = np.zeros(numInstance)
+            subOptRewards_sim = np.zeros(numInstance)
+            subOptRewardsTot_sim = np.zeros(numInstance)
 
             for a in range(numInstance):
                 arms = armInstances[a, (t * K):((t + 1) * K)]
@@ -286,6 +306,7 @@ def ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
                     indexhigh = np.zeros(K)
                     indexlow = np.zeros(K)
                     cumulative_reward = np.zeros(K)
+                    pullEach = int(np.ceil(np.power(T, 2 / 3)))
 
                     for i in range(T):
                         if i < K:
@@ -294,32 +315,57 @@ def ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list):
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                            # indexhigh[pull] =
-                            # indexlow[pull] =
+                            indexhigh[pull] = empirical_mean[pull] + \
+                                              2 * np.sqrt(max(np.log(T / (K * np.power(pulls[pull], 3 / 2))), 0)
+                                                          / pulls[pull]) * (pullEach > pulls[pull])
+                            indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
                         else:
                             pull = np.argmax(indexhigh)
                             rew = np.random.binomial(1, arms[pull], 1)
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                            # indexhigh[pull] =
-                            # indexlow[pull] =
+                            indexhigh[pull] = empirical_mean[pull] + \
+                                              2 * np.sqrt(max(np.log(T / (K * np.power(pulls[pull], 3 / 2))), 0)
+                                                          / pulls[pull]) * (pullEach > pulls[pull])
+                            indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
 
-                    regret_sim[a] += max(arms) * T - max(cumulative_reward)
+                        lcb = np.argmax(indexlow)
+                        indexhigh_copy = indexhigh.copy()
+                        indexhigh_copy[lcb] = -1
+                        ucb = np.argmax(indexhigh_copy)
+                        if indexlow[lcb] > indexhigh[ucb]:
+                            pull_arm = lcb
+                            break
+                    cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
+
+                    largestCumRew = cumulative_reward[pull_arm]
+                    interim = [a for i, a in enumerate(cumulative_reward) if a < largestCumRew]
+                    secondLargestCumRew = max(interim)
+
+                    regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
+                    subOptRewards_sim[a] += (largestCumRew - secondLargestCumRew) / (max(arms) * T)
+                    subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
                 regret_sim[a] /= (endSim - startSim)
+                subOptRewards_sim[a] /= (endSim - startSim)
+                subOptRewardsTot_sim[a] /= (endSim - startSim)
 
             regret[t] = np.mean(regret_sim)
             stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
+            subOptRewards[t] = np.mean(subOptRewards_sim)
+            subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
 
     print("ADAETC results:")
-    print("K:")
-    print(K_list)
-    print("T:")
+    print("K: " + str(K) + ", and T: ", end="")
     print(T_list)
     print("Regrets")
     print(regret)
     print("Standard errors")
     print(stError)
+    print("Ratio of difference between cumulative rewards to the benchmark")
+    print(subOptRewards)
+    print("Ratio of total cumulative rewards to the benchmark")
+    print(subOptRewardsTot)
     print()
     return regret, stError
 
@@ -330,16 +376,17 @@ if __name__ == '__main__':
     numArmDists = 100
     alpha = 0.48
     startSim = 0
-    endSim = 100
+    endSim = 10
+    pw = 1/5
 
     # armInstances = generateArms(K_list, T_list, numArmDists, alpha)
     # armInstances = generateTwoCloserArms(T_list, numArmDists)
-    armInstances = generateTwoFartherArms(T_list, numArmDists)
+    armInstances = generateTwoFartherArms(T_list, numArmDists, pw)
 
     varyingK = True if len(K_list) > 1 else False
 
     start = time.time()
     naiveUCB1(armInstances, startSim, endSim, K_list, T_list)
     ETC(varyingK, armInstances, startSim, endSim, K_list, T_list)
-    # ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list)
-    print("took " + str(time.time() - start) + " seconds")
+    ADAETC(varyingK, armInstances, startSim, endSim, K_list, T_list)
+    print("took " + str(time.time() - start) + " seconds; arms within " + str(pw) + " power of respective T values")
