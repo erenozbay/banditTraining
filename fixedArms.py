@@ -1,7 +1,7 @@
 import numpy as np
+import time
 
-
-def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
+def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, stime):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -16,6 +16,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
     # subOptRewardsTot = np.zeros(numT)
     for t in range(numT):
         T = T_list[t]
+        print("T ", T, ", duration ", time.time() - stime)
         regret_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
         subOptRewards_sim = np.zeros(numInstance)
@@ -30,6 +31,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
 
                 empirical_mean = np.zeros(K)
                 pulls = np.zeros(K)
+                pulls_later = np.zeros(K)
                 prev_pull = 0
                 index = np.zeros(K)
                 cumulative_reward = np.zeros(K)
@@ -48,6 +50,8 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
                         rew = np.random.binomial(1, arms[pull], 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
+                        if i > T * 0.75:
+                            pulls_later[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
                         if i <= T / 4:
@@ -63,7 +67,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
                 reward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
 
-                subOptRewards_sim[a] += (np.sort(pulls)[-1] / max(1, np.sort(pulls)[-2]))
+                subOptRewards_sim[a] += (np.sort(pulls_later)[-1] / max(1, np.sort(pulls_later)[-2]))
                 # subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
             regret_sim[a] /= (endSim - startSim)
             reward_sim[a] /= (endSim - startSim)
@@ -90,7 +94,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
     print(reward)
     print("Standard errors", end=" ")
     print(stError)
-    print("Ratio of pulls spent on the most pulled and the second most pulled")
+    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
     print(subOptRewards)
     print("Number of switches between arms")
     for i in range(4):
@@ -275,7 +279,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
     print(reward)
     print("Standard errors", end=" ")
     print(stError)
-    print("Ratio of pulls spent on the most pulled and the second most pulled")
+    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
     print(subOptRewards)
     # print("Ratio of total cumulative rewards to the benchmark")
     # print(subOptRewardsTot)
