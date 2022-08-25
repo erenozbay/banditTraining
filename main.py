@@ -8,11 +8,11 @@ import generateArms as gA
 if __name__ == '__main__':
     K_list = np.array([2])
     varyingK = True if len(K_list) > 1 else False
-    T_list = np.arange(1, 21) * 1000
-    numArmDists = 25
+    T_list = np.arange(1, 21) * 500
+    numArmDists = 1
     alpha = 0
     startSim = 0
-    endSim = 10
+    endSim = 250
     pw = 1 / 2
 
     # armInstances = gA.generateArms(K_list, T_list, numArmDists, alpha)
@@ -42,13 +42,35 @@ if __name__ == '__main__':
     #     df_naiveUCB1[colName] = naiveUCB1['numSwitchErrors'][i]
     # df_naiveUCB1.to_csv('naiveUCB1.csv', index=False)
 
+    # CHARTS
+    # pull ratios
     plt.rc('axes', axisbelow=True)
     plt.grid()
-    for i in range(4):
-        plt.plot(T_list, naiveUCB1['numSwitches'][i], label=i + 1)
-        plt.errorbar(T_list, naiveUCB1['numSwitches'][i], yerr=naiveUCB1['numSwitchErrors'][i], fmt='o')
-    plt.legend(loc="upper left")
-    plt.ylabel('average number of switches')
+    plt.plot(T_list, naiveUCB1['pullRatios'])
+    plt.title('The most pulled arm')
+    plt.ylabel('average pulls spent across sims of ' + str(endSim))
+    plt.xlabel('T')
+    # plt.savefig('pullRatios.png')
+    plt.show()
+
+    # total switches
+    plt.rc('axes', axisbelow=True)
+    plt.grid()
+    plt.plot(T_list, sum(naiveUCB1['numSwitches']))
+    plt.errorbar(T_list, sum(naiveUCB1['numSwitches']), yerr=sum(naiveUCB1['numSwitchErrors']), fmt='o')
+    plt.title('The switches between arms')
+    plt.ylabel('average number of switches across sims of ' + str(endSim))
     plt.xlabel('T')
     # plt.savefig('numberOfSwitches.png')
     plt.show()
+
+    # quartered switches
+    # for i in range(4):
+    #     plt.plot(T_list, naiveUCB1['numSwitches'][i], label=i + 1)
+    #     plt.errorbar(T_list, naiveUCB1['numSwitches'][i], yerr=naiveUCB1['numSwitchErrors'][i], fmt='o')
+    # plt.legend(loc="upper left")
+    # plt.title('The switches between arms')
+    # plt.ylabel('average number of switches')
+    # plt.xlabel('T')
+    # # plt.savefig('numberOfSwitches_quartered.png')
+    # plt.show()

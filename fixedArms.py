@@ -1,6 +1,7 @@
 import numpy as np
 import time
 
+
 def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, stime):
     # fix K and vary T values
     K = K_list[0]
@@ -67,7 +68,9 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, stime):
                 reward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
 
-                subOptRewards_sim[a] += (np.sort(pulls_later)[-1] / max(1, np.sort(pulls_later)[-2]))
+                subOptRewards_sim[a] += max(pulls) / T
+                # subOptRewards_sim[a] += (np.sort(pulls)[-1] / max(1, np.sort(pulls)[-2]))
+                # subOptRewards_sim[a] += (np.sort(pulls_later)[-1] / max(1, np.sort(pulls_later)[-2]))
                 # subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
             regret_sim[a] /= (endSim - startSim)
             reward_sim[a] /= (endSim - startSim)
@@ -98,11 +101,11 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, stime):
     print(subOptRewards)
     print("Number of switches between arms")
     for i in range(4):
-        print("Quarter ",  i)
+        print("Quarter ", i)
         print(switch[i])
-    print("And their standard errors")
+    print("And their standard errors - nonzero if there are multiple arm instances")
     for i in range(4):
-        print("Quarter ",  i)
+        print("Quarter ", i)
         print(switch_stError[i])
     # print("Ratio of total cumulative rewards to the benchmark")
     # print(subOptRewardsTot)
