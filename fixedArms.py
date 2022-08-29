@@ -103,6 +103,8 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, stime):
     for i in range(4):
         print("Quarter ", i)
         print(switch[i])
+    print('total')
+    print(switch[0]+switch[1]+switch[2]+switch[3])
     print("And their standard errors - nonzero if there are multiple arm instances")
     for i in range(4):
         print("Quarter ", i)

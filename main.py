@@ -8,11 +8,11 @@ import generateArms as gA
 if __name__ == '__main__':
     K_list = np.array([2])
     varyingK = True if len(K_list) > 1 else False
-    T_list = np.arange(1, 21) * 500
+    T_list = np.arange(1, 1) * 500
     numArmDists = 1
     alpha = 0
     startSim = 0
-    endSim = 250
+    endSim = 100
     pw = 1 / 2
 
     # armInstances = gA.generateArms(K_list, T_list, numArmDists, alpha)
@@ -25,8 +25,8 @@ if __name__ == '__main__':
     # NADAETC = fA.NADAETC(armInstances, startSim, endSim, K_list, T_list)
     # UCB1_stopping = fA.UCB1_stopping(armInstances, startSim, endSim, K_list, T_list)
     print("took " + str(time.time() - start) + " seconds; arms within " + str(pw) + " power of respective T values")
-    print("Larger the ratio of difference between cumulative rewards to the total")
-    print("cumulative rewards, better the performance of max objective")
+    # print("Larger the ratio of difference between cumulative rewards to the total")
+    # print("cumulative rewards, better the performance of max objective")
 
     # df_ADAETC = pd.DataFrame({'T': T_list, 'Regret': ADAETC['regret'], 'Standard Error': ADAETC['standardError'],
     #                           'Ratio of pulls': ADAETC['pullRatios']})
@@ -50,19 +50,22 @@ if __name__ == '__main__':
     plt.title('The most pulled arm')
     plt.ylabel('average pulls spent across sims of ' + str(endSim))
     plt.xlabel('T')
-    # plt.savefig('pullRatios.png')
-    plt.show()
+    plt.savefig('res/pullRatios.png')
+    # plt.show()
+    plt.cla()
 
     # total switches
     plt.rc('axes', axisbelow=True)
     plt.grid()
     plt.plot(T_list, sum(naiveUCB1['numSwitches']))
     plt.errorbar(T_list, sum(naiveUCB1['numSwitches']), yerr=sum(naiveUCB1['numSwitchErrors']), fmt='o')
+    plt.ylim(ymin=0)
     plt.title('The switches between arms')
     plt.ylabel('average number of switches across sims of ' + str(endSim))
     plt.xlabel('T')
-    # plt.savefig('numberOfSwitches.png')
+    plt.savefig('res/numberOfSwitches.png')
     plt.show()
+    plt.cla()
 
     # quartered switches
     # for i in range(4):
@@ -74,3 +77,4 @@ if __name__ == '__main__':
     # plt.xlabel('T')
     # # plt.savefig('numberOfSwitches_quartered.png')
     # plt.show()
+    # plt.cla()
