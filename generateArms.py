@@ -19,7 +19,7 @@ def generateRottingArms(K, T_list, numArmDists, alpha, beta):
         col = 0
         for t in range(len(T_list)):
             armInstances[i, col:(col + K)] = np.random.uniform(alpha, 1 - alpha, K)
-            armInstances[i, (col + K):(col + 2 * K)] = np.random.uniform(beta, beta, K)
+            armInstances[i, (col + K):(col + 2 * K)] = np.random.uniform(beta, 2 * beta, K)
             col += 2 * K
     print(armInstances)
     return armInstances

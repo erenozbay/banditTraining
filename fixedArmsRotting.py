@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
+def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, pw):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -32,7 +32,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
                 for i in range(T):
                     if i < K:
                         pull = i
-                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.sqrt(i))
+                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
                         rew = np.random.binomial(1, meanreward, 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
@@ -40,7 +40,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
                         index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
                     else:
                         pull = np.argmax(index)
-                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.sqrt(i))
+                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
                         rew = np.random.binomial(1, meanreward, 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
@@ -48,7 +48,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
                         index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
                     if get_fullreward:
                         for k in range(K):
-                            fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.sqrt(i))
+                            fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.power(i, pw))
 
                 reward_sim[a] += sum(cumulative_reward)
                 bestreward[t] = max(fullreward)
@@ -89,7 +89,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
             'pullRatios': subOptRewards}
 
 
-def ADAETC(armInstances, startSim, endSim, K_list, T_list):
+def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -124,7 +124,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
                 for i in range(T):
                     if i < K:
                         pull = i
-                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.sqrt(i))
+                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
                         rew = np.random.binomial(1, meanreward, 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
@@ -135,7 +135,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
                         indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
                     else:
                         pull = np.argmax(indexhigh)
-                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.sqrt(i))
+                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
                         rew = np.random.binomial(1, meanreward, 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
@@ -155,31 +155,26 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
 
                     if get_fullreward:
                         for k in range(K):
-                            fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.sqrt(i))
+                            fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.power(i, pw))
+                            stoppedTime = i + 1
 
-                for i in range(int(T - sum(pulls))):
-                    meanreward = arms[pull_arm] * np.exp(-arms[pull_arm + K] * np.sqrt(i))
+                for i in range(T - int(sum(pulls)), T):
+                    meanreward = arms[pull_arm] * np.exp(-arms[pull_arm + K] * np.power(pulls[pull_arm], pw))
                     cumulative_reward[pull_arm] += np.random.binomial(1, meanreward, 1)
-                    if get_fullreward:
-                        for k in range(K):
-                            fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.sqrt(i))
                 pulls[pull_arm] += int(T - sum(pulls))
+                if get_fullreward:
+                    for i in range(stoppedTime, T):
+                        for k in range(K):
+                            fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.power(i, pw))
 
                 largestPull = pulls[pull_arm]
                 interim = [aa for ii, aa in enumerate(pulls) if aa < largestPull]
-                secondLargestPull = max(interim)
+                secondLargestPull = max(interim) if len(interim) > 0 else largestPull
 
                 reward_sim[a] += sum(cumulative_reward)
                 bestreward[t] = max(fullreward)
                 get_fullreward = False
-                # for i in range(K):
-                # # finite time summation for e^(-beta * x), x = 2 to T
-                # finite_exp = np.exp(-arms[i + K] * (T + 1)) * (np.exp(arms[i + K] * T) - np.exp(arms[i + K])) / \
-                #              (np.exp(arms[i + K]) - 1)
-                # finite_exp += 1 + np.exp(-arms[i + K]) - np.exp(-arms[i + K] * T)  # add 0 and 1, subtract T
-                # fullreward = arms[i] * finite_exp
-                # if fullreward > bestreward:
-                #     bestreward = fullreward
+
                 regret_sim[a] += bestreward[t] - cumulative_reward[pull_arm]
                 subOptRewards_sim[a] += (largestPull / max(secondLargestPull, 1))
             reward_sim[a] /= (endSim - startSim)
@@ -191,6 +186,120 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
         subOptRewards[t] = np.mean(subOptRewards_sim)
 
     print("ADAETC results:")
+    print("K: " + str(K) + ", and T: ", end=" ")
+    print(T_list)
+    print("Regrets", end=" ")
+    print(regret)
+    print("Total Cumulative Rewards", end=" ")
+    print(reward)
+    print("Standard errors", end=" ")
+    print(stError)
+    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
+    print(subOptRewards)
+    print("Best reward is ", bestreward)
+    print()
+    return {'regret': regret,
+            'standardError': stError,
+            'pullRatios': subOptRewards}
+
+
+def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero, alpha):
+    def filterRotting(armIndices, armRewards, windowHere, deltaHere, sigmaHere):
+        # armIndices keeps the indices of arms, armRewards keeps the relevant mean reward due to those arms
+        candidateArms = []
+        confidence = np.sqrt(2 * sigmaHere * sigmaHere / windowHere * np.log(1 / deltaHere))
+        highMu = max(armRewards)
+        for k in range(len(armIndices)):
+            deltaVal = highMu - armRewards[k]
+            if deltaVal <= 2 * confidence:
+                candidateArms.append(armIndices[k])
+
+        return candidateArms
+
+    # fix K and vary T values
+    K = K_list[0]
+    numT = len(T_list)
+    numInstance = len(armInstances)
+
+    regret = np.zeros(numT)
+    reward = np.zeros(numT)
+    stError = np.zeros(numT)
+    subOptRewards = np.zeros(numT)
+    bestreward = np.zeros(numT)
+    col = -2 * K
+    for t in range(numT):
+        T = T_list[t]
+        print("Rotting, T ", T)
+        regret_sim = np.zeros(numInstance)
+        reward_sim = np.zeros(numInstance)
+        subOptRewards_sim = np.zeros(numInstance)
+        col += 2 * K
+
+        for a in range(numInstance):
+            arms = armInstances[a, col:(col + 2 * K)]
+            fullreward = np.zeros(K)
+            get_fullreward = True
+
+            for j in range(endSim - startSim):
+                # empirical_mean = np.zeros(K)
+                pulls = np.zeros(K)
+                # index = np.zeros(K)
+                cumulative_reward = np.zeros(K)
+                rewards = np.zeros((K, T))
+                for i in range(T):
+                    if i < K:
+                        pull = i
+                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
+                        rewards[pull, int(pulls[pull])] = np.random.binomial(1, meanreward, 1)
+                        cumulative_reward[pull] += rewards[pull, int(pulls[pull])]
+                        pulls[pull] += 1
+                        # empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                    else:
+                        delta = deltaZero / (K * np.power(i, alpha))
+                        window = 1
+                        K_filtering = np.arange(0, K)
+                        filtering = True
+
+                        while filtering:
+                            rewards_windowed = np.zeros(len(K_filtering))
+                            for k in range(len(K_filtering)):
+                                arm = K_filtering[k]
+                                for h in range(window):
+                                    rewards_windowed[k] += rewards[arm, int(pulls[arm] - 1 - h)]
+                                rewards_windowed[k] /= window
+                            K_filtering = filterRotting(K_filtering, rewards_windowed, window, delta, sigma)
+                            sub_pulls = pulls[K_filtering]
+                            for k in range(len(K_filtering)):
+                                arm = K_filtering[k]
+                                if pulls[arm] == window:
+                                    filtering = False
+                                    pull = K_filtering[np.argmin(sub_pulls)]
+                            window += 1
+
+                        meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
+                        rewards[pull, int(pulls[pull])] = np.random.binomial(1, meanreward, 1)
+                        cumulative_reward[pull] += rewards[pull, int(pulls[pull])]
+                        pulls[pull] += 1
+
+                    if get_fullreward:
+                        for k in range(K):
+                            fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.power(i, pw))
+
+                reward_sim[a] += sum(cumulative_reward)
+                bestreward[t] = max(fullreward)
+                get_fullreward = False
+
+                regret_sim[a] += bestreward[t] - max(cumulative_reward)
+                subOptRewards_sim[a] += max(pulls) / T
+            reward_sim[a] /= (endSim - startSim)
+            regret_sim[a] /= (endSim - startSim)
+            subOptRewards_sim[a] /= (endSim - startSim)
+        reward[t] = np.mean(reward_sim)
+        regret[t] = np.mean(regret_sim)
+        stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
+        subOptRewards[t] = np.mean(subOptRewards_sim)
+
+    print("Rotting Bandits results:")
     print("K: " + str(K) + ", and T: ", end=" ")
     print(T_list)
     print("Regrets", end=" ")
