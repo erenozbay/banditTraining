@@ -44,6 +44,7 @@ def generateRottingArms(K, T_list, numArmDists, alpha, beta):
 #     return armInstances
 
 
+# this should be made more clear and concise, basically I should be able to fix one arm and generate others with a gap
 def generateMultipleArms(K_list, T_list, numArmDists, pw=1 / 3):
     ncol = sum(K_list) * len(T_list)
     armInstances = np.zeros((numArmDists, ncol))

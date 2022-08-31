@@ -53,14 +53,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, pw):
                 reward_sim[a] += sum(cumulative_reward)
                 bestreward[t] = max(fullreward)
                 get_fullreward = False
-                # for i in range(K):
-                #     # finite time summation for e^(-beta * x), x = 2 to T
-                #     finite_exp = np.exp(-arms[i + K] * (T + 1)) * (np.exp(arms[i + K] * T) - np.exp(arms[i + K])) / \
-                #                  (np.exp(arms[i + K]) - 1)
-                #     finite_exp += 1 + np.exp(-arms[i + K]) - np.exp(-arms[i + K] * T)  # add 0 and 1, subtract T
-                #     fullreward = arms[i] * finite_exp
-                #     if fullreward > bestreward:
-                #         bestreward = fullreward
+
                 regret_sim[a] += bestreward[t] - max(cumulative_reward)
                 subOptRewards_sim[a] += max(pulls) / T
             reward_sim[a] /= (endSim - startSim)

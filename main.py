@@ -18,6 +18,8 @@ if __name__ == '__main__':
     pw = 1  # used for both, larger pw means higher variance in mean changes for rotting
             # larger pw means closer mean rewards in the arm instances generated
 
+    # below items should be made neater, it's hard to see what is running
+
     # rotting bandits part
     # start = time.time()
     # armInstances = gA.generateRottingArms(K_list[0], T_list, numArmDists, alpha_, beta_)

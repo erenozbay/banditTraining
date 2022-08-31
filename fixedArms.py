@@ -351,7 +351,7 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m):
                     lcb_set = np.argsort(-indexlow)
                     lcb = lcb_set[m - 1]
                     indexhigh_copy = indexhigh.copy()
-                    indexhigh_copy[lcb_set[0:m]] = -1
+                    indexhigh_copy[lcb_set[0:m]] = -1  # make sure that correct arms are excluded from max UCB step
                     ucb = np.argsort(-indexhigh_copy)[0]
                     if indexlow[lcb] > indexhigh[ucb]:
                         pullset = lcb_set[0:m]
