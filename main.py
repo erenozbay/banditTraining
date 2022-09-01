@@ -7,14 +7,14 @@ import generateArms as gA
 import fixedArmsRotting as fAR
 
 if __name__ == '__main__':
-    K_list = np.array([5])
+    K_list = np.array([4])
     varyingK = True if len(K_list) > 1 else False
     T_list = np.arange(1, 6) * 100
-    numArmDists = 10
-    alpha_ = 0.4  # can be used for both
+    numArmDists = 250
+    alpha_ = 0  # can be used for both
     beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 10
+    endSim = 100
     pw = 1  # used for both, larger pw means higher variance in mean changes for rotting
             # larger pw means closer mean rewards in the arm instances generated
 
@@ -28,19 +28,29 @@ if __name__ == '__main__':
     # rotting = fAR.Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma=0.25, deltaZero=2, alpha=0.05)
     # print("took " + str(time.time() - start) + " seconds; alpha " + str(alpha_) + ", beta " + str(beta_))
 
-    # fixed mean rewards throughout
+    # fixed mean rewards throughout, m = 1
+    # start = time.time()
+    # armInstances = gA.generateArms(K_list, T_list, numArmDists, alpha_)
+    # armInstances = gA.generateMultipleArms(K_list, T_list, numArmDists, pw)
+    # for i in range(10):
+    #     armInstances = gA.generateTwoArms(T_list, numArmDists, delta=np.ones(5)*0.05*(i + 1))
+    #     naiveUCB1 = fA.naiveUCB1(armInstances, startSim, endSim, K_list, T_list, start)
+    #     ADAETC = fA.ADAETC(armInstances, startSim, endSim, K_list, T_list)
+    #     ETC = fA.ETC(armInstances, startSim, endSim, K_list, T_list)
+    #     NADAETC = fA.NADAETC(armInstances, startSim, endSim, K_list, T_list)
+    #     UCB1_stopping = fA.UCB1_stopping(armInstances, startSim, endSim, K_list, T_list)
+    #     print("took " + str(time.time() - start) + " seconds; arms within " + str(pw) + " power of respective T values")
+
+    # fixed mean rewards throughout, m > 1
     start = time.time()
     armInstances = gA.generateArms(K_list, T_list, numArmDists, alpha_)
     # armInstances = gA.generateMultipleArms(K_list, T_list, numArmDists, pw)
-    # naiveUCB1 = fA.naiveUCB1(armInstances, startSim, endSim, K_list, T_list, start)
-    ADAETC = fA.ADAETC(armInstances, startSim, endSim, K_list, T_list)
-    m_ADAETC = fA.m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m=1)
-    # ETC = fA.ETC(armInstances, startSim, endSim, K_list, T_list)
-    # NADAETC = fA.NADAETC(armInstances, startSim, endSim, K_list, T_list)
-    # UCB1_stopping = fA.UCB1_stopping(armInstances, startSim, endSim, K_list, T_list)
-    print("took " + str(time.time() - start) + " seconds; arms within " + str(pw) + " power of respective T values")
-    # print("Larger the ratio of difference between cumulative rewards to the total")
-    # print("cumulative rewards, better the performance of max objective")
+    RADAETC = fA.RADAETC(armInstances, startSim, endSim, K_list, T_list, m=2)
+    m_ADAETC = fA.m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m=2)
+    m_ETC = fA.m_ETC(armInstances, startSim, endSim, K_list, T_list, m=2)
+    m_NADAETC = fA.m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m=2)
+    m_UCB1_stopping = fA.m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m=2)
+    print("took " + str(time.time() - start) + " seconds")
 
     # DataFrames
     # df_ADAETC = pd.DataFrame({'T': T_list, 'Regret': ADAETC['regret'], 'Standard Error': ADAETC['standardError'],
