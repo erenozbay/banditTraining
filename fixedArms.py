@@ -98,18 +98,18 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, stime):
     print(reward)
     print("Standard errors", end=" ")
     print(stError)
-    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
+    print("Ratio of pulls spent on the most pulled arm to horizon T")
     print(subOptRewards)
-    print("Number of switches between arms")
-    for i in range(4):
-        print("Quarter ", i)
-        print(switch[i])
-    print('total')
+    # print("Number of switches between arms")
+    # for i in range(4):
+    #     print("Quarter ", i)
+    #     print(switch[i])
+    print('Number of switches between arms')
     print(switch[0] + switch[1] + switch[2] + switch[3])
-    print("And their standard errors - nonzero if there are multiple arm instances")
-    for i in range(4):
-        print("Quarter ", i)
-        print(switch_stError[i])
+    # print("And their standard errors - nonzero if there are multiple arm instances")
+    # for i in range(4):
+    #     print("Quarter ", i)
+    #     print(switch_stError[i])
     # print("Ratio of total cumulative rewards to the benchmark")
     # print(subOptRewardsTot)
     print()
@@ -337,7 +337,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
 
                 reward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
-                subOptRewards_sim[a] += (largestPull / max(secondLargestPull, 1))
+                subOptRewards_sim[a] += (largestPull / T)  # max(secondLargestPull, 1))
                 # subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
             reward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
@@ -358,7 +358,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
     print(reward)
     print("Standard errors", end=" ")
     print(stError)
-    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
+    print("Ratio of pulls spent on the most pulled arm to horizon T")
     print(subOptRewards)
     # print("Ratio of total cumulative rewards to the benchmark")
     # print(subOptRewardsTot)
@@ -483,7 +483,6 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m):
 
             for j in range(endSim - startSim):
                 # call ADAETC m times with randomly grouped K/m arms and T/m pulls per call
-
                 res = {}
                 np.random.shuffle(arms)
 
@@ -780,16 +779,13 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
                 reward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
                 subOptRewards_sim[a] += (largestCumRew - secondLargestCumRew) / sum(cumulative_reward)
-                # subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
             reward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
             subOptRewards_sim[a] /= (endSim - startSim)
-            # subOptRewardsTot_sim[a] /= (endSim - startSim)
         reward[t] = np.mean(reward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
-        # subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
 
     print("UCB1 with stopping results:")
     print("K: " + str(K) + ", and T: ", end=" ")
@@ -802,8 +798,6 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
     print(stError)
     print("Ratio of difference between two closest highest cumulative rewards to the total cumulative rewards")
     print(subOptRewards)
-    # print("Ratio of total cumulative rewards to the benchmark")
-    # print(subOptRewardsTot)
     print()
     return {'regret': regret,
             'standardError': stError,

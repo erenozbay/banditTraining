@@ -7,7 +7,7 @@ def generateArms(K_list, T_list, numArmDists, alpha):
 
     for i in range(numArmDists):
         armInstances[i, :] = np.random.uniform(alpha, 1 - alpha, ncol)
-    print(armInstances)
+    print(armInstances[0])
     return armInstances
 
 
@@ -21,7 +21,7 @@ def generateRottingArms(K, T_list, numArmDists, alpha, beta):
             armInstances[i, col:(col + K)] = np.random.uniform(alpha, 1 - alpha, K)
             armInstances[i, (col + K):(col + 2 * K)] = np.random.uniform(beta, 2 * beta, K)
             col += 2 * K
-    print(armInstances)
+    print(armInstances[0])
     return armInstances
 
 
@@ -38,7 +38,7 @@ def generateTwoArms(T_list, numArmDists, delta):
             arms[j * 2 + 1] = second
         armInstances[i, :] = arms
 
-    print(armInstances)
+    print(armInstances[0])
     return armInstances
 
 
@@ -85,5 +85,5 @@ def generateMultipleArms(K_list, T_list, numArmDists, pw=1 / 3):
             arms_T[(t * sum(K_list)):((t + 1) * sum(K_list))] = arms
         armInstances[0, :] = arms_T
 
-    print(armInstances)
+    print(armInstances[0])
     return armInstances

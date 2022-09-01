@@ -73,7 +73,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, pw):
     print(reward)
     print("Standard errors", end=" ")
     print(stError)
-    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
+    print("Ratio of pulls spent on the most pulled arm to horizon T")
     print(subOptRewards)
     print("Best reward is ", bestreward)
     print()
@@ -82,6 +82,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, pw):
             'pullRatios': subOptRewards}
 
 
+# this is now looking at the previous 10 rewards to calculate the index for an arm
 def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
     # fix K and vary T values
     K = K_list[0]
@@ -89,7 +90,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
     numInstance = len(armInstances)
 
     regret = np.zeros(numT)
-    reward = np.zeros(numT)
+    rewardFinal = np.zeros(numT)
     stError = np.zeros(numT)
     subOptRewards = np.zeros(numT)
     bestreward = np.zeros(numT)
@@ -111,6 +112,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
                 pulls = np.zeros(K)
                 indexhigh = np.zeros(K)
                 indexlow = np.zeros(K)
+                reward = np.zeros((K, T))
                 cumulative_reward = np.zeros(K)
                 pullEach = int(np.ceil(np.power(T, 2 / 3)))
                 pull_arm = 0
@@ -119,9 +121,11 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
                         pull = i
                         meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
                         rew = np.random.binomial(1, meanreward, 1)
+                        reward[pull, int(pulls[pull])] = rew
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
-                        empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                        empirical_mean[pull] = sum(reward[pull, max(int(pulls[pull] - 1000), 0):int(pulls[pull])]) / \
+                                               pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
                                           2 * np.sqrt(max(np.log(T / (K * np.power(pulls[pull], 3 / 2))), 0)
                                                       / pulls[pull]) * (pullEach > pulls[pull])
@@ -130,9 +134,11 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
                         pull = np.argmax(indexhigh)
                         meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
                         rew = np.random.binomial(1, meanreward, 1)
+                        reward[pull, int(pulls[pull])] = rew
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
-                        empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                        empirical_mean[pull] = sum(reward[pull, max(int(pulls[pull] - 1000), 0):int(pulls[pull])]) / \
+                                               pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
                                           2 * np.sqrt(max(np.log(T / (K * np.power(pulls[pull], 3 / 2))), 0)
                                                       / pulls[pull]) * (pullEach > pulls[pull])
@@ -151,9 +157,11 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
                             fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.power(i, pw))
                             stoppedTime = i + 1
 
-                for i in range(T - int(sum(pulls)), T):
+                for i in range(int(sum(pulls)) + 1, T):
                     meanreward = arms[pull_arm] * np.exp(-arms[pull_arm + K] * np.power(pulls[pull_arm], pw))
-                    cumulative_reward[pull_arm] += np.random.binomial(1, meanreward, 1)
+                    rew = np.random.binomial(1, meanreward, 1)
+                    reward[pull_arm, int(pulls[pull_arm])] = rew
+                    cumulative_reward[pull_arm] += rew
                 pulls[pull_arm] += int(T - sum(pulls))
                 if get_fullreward:
                     for i in range(stoppedTime, T):
@@ -169,11 +177,11 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
                 get_fullreward = False
 
                 regret_sim[a] += bestreward[t] - cumulative_reward[pull_arm]
-                subOptRewards_sim[a] += (largestPull / max(secondLargestPull, 1))
+                subOptRewards_sim[a] += (largestPull / T)
             reward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
             subOptRewards_sim[a] /= (endSim - startSim)
-        reward[t] = np.mean(reward_sim)
+        rewardFinal[t] = np.mean(reward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
@@ -184,10 +192,10 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
     print("Regrets", end=" ")
     print(regret)
     print("Total Cumulative Rewards", end=" ")
-    print(reward)
+    print(rewardFinal)
     print("Standard errors", end=" ")
     print(stError)
-    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
+    print("Ratio of pulls spent on the most pulled arm to horizon T")
     print(subOptRewards)
     print("Best reward is ", bestreward)
     print()
@@ -222,13 +230,15 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
     col = -2 * K
     for t in range(numT):
         T = T_list[t]
-        print("Rotting, T ", T)
+        print()
+        print("Rotting, T ", T, end=" ")
         regret_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
         subOptRewards_sim = np.zeros(numInstance)
         col += 2 * K
 
         for a in range(numInstance):
+            print("Inst. ", a, end=" ")
             arms = armInstances[a, col:(col + 2 * K)]
             fullreward = np.zeros(K)
             get_fullreward = True
@@ -301,7 +311,7 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
     print(reward)
     print("Standard errors", end=" ")
     print(stError)
-    print("Ratio of pulls spent on the most pulled and the second most pulled in the last quarter horizon")
+    print("Ratio of pulls spent on the most pulled arm to horizon T")
     print(subOptRewards)
     print("Best reward is ", bestreward)
     print()

@@ -6,51 +6,86 @@ import fixedArms as fA
 import generateArms as gA
 import fixedArmsRotting as fAR
 
+
+def rotting(K_list_, T_list_, numArmDists_, alpha__, beta__, startSim_, endSim_, pw_):
+    print("Running rotting bandits")
+    start_ = time.time()
+    armInstances_ = gA.generateRottingArms(K_list_[0], T_list_, numArmDists_, alpha__, beta__)
+    print("Running rotting bandits")
+    naiveUCB1_ = fAR.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_, pw_)
+    ADAETC_ = fAR.ADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_, pw_)
+    rotting_ = fAR.Rotting(armInstances_, startSim_, endSim_, K_list_, T_list_, pw_,
+                           sigma=0.25, deltaZero=2, alpha=0.05)
+    print("took " + str(time.time() - start_) + " seconds; alpha " + str(alpha__) + ", beta " + str(beta__))
+
+    return {'UCB1': naiveUCB1_,
+            'ADAETC': ADAETC_,
+            'Rotting': rotting_}
+
+
+def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_):
+    print("Running m = 1")
+    start_ = time.time()
+    armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__)
+    # armInstances_ = gA.generateMultipleArms(K_list, T_list, numArmDists, pw_)
+    # for i in range(10):
+    #     armInstances_ = gA.generateTwoArms(T_list_, numArmDists_, delta=np.ones(5) * 0.05 * (i + 1))
+    print("Running m=1")
+    naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_, start_)
+    ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list, T_list)
+    ETC_ = fA.ETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
+    NADAETC_ = fA.NADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
+    UCB1_stopping_ = fA.UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_)
+    print("took " + str(time.time() - start_) + " seconds")
+
+    return {'UCB1': naiveUCB1_,
+            'ADAETC': ADAETC_,
+            'ETC': ETC_,
+            'NADAETC': NADAETC_,
+            'UCB1-s': UCB1_stopping_}
+
+
+def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw_):
+    print("Running m =", m_)
+    start_ = time.time()
+    armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__)
+    # armInstances_ = gA.generateMultipleArms(K_list_, T_list_, numArmDists_, pw_)
+    print("Running m =", m_)
+    RADAETC_ = fA.RADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_, m_)
+    m_ADAETC_ = fA.m_ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_, m_)
+    m_ETC_ = fA.m_ETC(armInstances_, startSim_, endSim_, K_list, T_list_, m_)
+    m_NADAETC_ = fA.m_NADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_, m_)
+    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_, m_)
+    print("took " + str(time.time() - start_) + " seconds")
+
+    return {'RADAETC': RADAETC_,
+            'ADAETC': m_ADAETC_,
+            'ETC': m_ETC_,
+            'NADAETC': m_NADAETC_,
+            'UCB1-s': m_UCB1_stopping_}
+
+
 if __name__ == '__main__':
     K_list = np.array([4])
     varyingK = True if len(K_list) > 1 else False
     T_list = np.arange(1, 6) * 100
-    numArmDists = 250
-    alpha_ = 0  # can be used for both
+    m = 2
+    numArmDists = 10
+    alpha_ = 0.4  # can be used for both
     beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 100
-    pw = 1  # used for both, larger pw means higher variance in mean changes for rotting
-            # larger pw means closer mean rewards in the arm instances generated
-
-    # below items should be made neater, it's hard to see what is running
+    endSim = 10
+    pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
+    # larger pw means closer mean rewards in the arm instances generated
 
     # rotting bandits part
-    # start = time.time()
-    # armInstances = gA.generateRottingArms(K_list[0], T_list, numArmDists, alpha_, beta_)
-    # naiveUCB1 = fAR.naiveUCB1(armInstances, startSim, endSim, K_list, T_list, pw)
-    # ADAETC = fAR.ADAETC(armInstances, startSim, endSim, K_list, T_list, pw)
-    # rotting = fAR.Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma=0.25, deltaZero=2, alpha=0.05)
-    # print("took " + str(time.time() - start) + " seconds; alpha " + str(alpha_) + ", beta " + str(beta_))
+    # rotting(K_list, T_list, numArmDists, alpha_, beta_, startSim, endSim, pw)
 
     # fixed mean rewards throughout, m = 1
-    # start = time.time()
-    # armInstances = gA.generateArms(K_list, T_list, numArmDists, alpha_)
-    # armInstances = gA.generateMultipleArms(K_list, T_list, numArmDists, pw)
-    # for i in range(10):
-    #     armInstances = gA.generateTwoArms(T_list, numArmDists, delta=np.ones(5)*0.05*(i + 1))
-    #     naiveUCB1 = fA.naiveUCB1(armInstances, startSim, endSim, K_list, T_list, start)
-    #     ADAETC = fA.ADAETC(armInstances, startSim, endSim, K_list, T_list)
-    #     ETC = fA.ETC(armInstances, startSim, endSim, K_list, T_list)
-    #     NADAETC = fA.NADAETC(armInstances, startSim, endSim, K_list, T_list)
-    #     UCB1_stopping = fA.UCB1_stopping(armInstances, startSim, endSim, K_list, T_list)
-    #     print("took " + str(time.time() - start) + " seconds; arms within " + str(pw) + " power of respective T values")
+    # mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, pw)
 
     # fixed mean rewards throughout, m > 1
-    start = time.time()
-    armInstances = gA.generateArms(K_list, T_list, numArmDists, alpha_)
-    # armInstances = gA.generateMultipleArms(K_list, T_list, numArmDists, pw)
-    RADAETC = fA.RADAETC(armInstances, startSim, endSim, K_list, T_list, m=2)
-    m_ADAETC = fA.m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m=2)
-    m_ETC = fA.m_ETC(armInstances, startSim, endSim, K_list, T_list, m=2)
-    m_NADAETC = fA.m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m=2)
-    m_UCB1_stopping = fA.m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m=2)
-    print("took " + str(time.time() - start) + " seconds")
+    mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, pw)
 
     # DataFrames
     # df_ADAETC = pd.DataFrame({'T': T_list, 'Regret': ADAETC['regret'], 'Standard Error': ADAETC['standardError'],
