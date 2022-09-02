@@ -298,6 +298,7 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
 
+    print()
     print("Rotting Bandits results:")
     print("K: " + str(K) + ", and T: ", end=" ")
     print(T_list)
