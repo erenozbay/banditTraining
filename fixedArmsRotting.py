@@ -157,27 +157,27 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
                             fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.power(i, pw))
                             stoppedTime = i + 1
 
-                for i in range(int(sum(pulls)) + 1, T):
+                for i in range(int(sum(pulls)), T):
                     meanreward = arms[pull_arm] * np.exp(-arms[pull_arm + K] * np.power(pulls[pull_arm], pw))
                     rew = np.random.binomial(1, meanreward, 1)
                     reward[pull_arm, int(pulls[pull_arm])] = rew
                     cumulative_reward[pull_arm] += rew
-                pulls[pull_arm] += int(T - sum(pulls))
+                    pulls[pull_arm] += 1
                 if get_fullreward:
                     for i in range(stoppedTime, T):
                         for k in range(K):
                             fullreward[k] += arms[k] * np.exp(-arms[k + K] * np.power(i, pw))
 
-                largestPull = pulls[pull_arm]
-                interim = [aa for ii, aa in enumerate(pulls) if aa < largestPull]
-                secondLargestPull = max(interim) if len(interim) > 0 else largestPull
+                # largestPull = pulls[pull_arm]
+                # interim = [aa for ii, aa in enumerate(pulls) if aa < largestPull]
+                # secondLargestPull = max(interim) if len(interim) > 0 else largestPull
 
                 reward_sim[a] += sum(cumulative_reward)
                 bestreward[t] = max(fullreward)
                 get_fullreward = False
 
                 regret_sim[a] += bestreward[t] - cumulative_reward[pull_arm]
-                subOptRewards_sim[a] += (largestPull / T)
+                subOptRewards_sim[a] += pulls[pull_arm] / T
             reward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
             subOptRewards_sim[a] /= (endSim - startSim)
@@ -211,10 +211,8 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
         confidence = np.sqrt(2 * sigmaHere * sigmaHere / windowHere * np.log(1 / deltaHere))
         highMu = max(armRewards)
         for k in range(len(armIndices)):
-            deltaVal = highMu - armRewards[k]
-            if deltaVal <= 2 * confidence:
+            if highMu <= armRewards[k] + 2 * confidence:
                 candidateArms.append(armIndices[k])
-
         return candidateArms
 
     # fix K and vary T values
@@ -244,9 +242,7 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
             get_fullreward = True
 
             for j in range(endSim - startSim):
-                # empirical_mean = np.zeros(K)
                 pulls = np.zeros(K)
-                # index = np.zeros(K)
                 cumulative_reward = np.zeros(K)
                 rewards = np.zeros((K, T))
                 for i in range(T):
@@ -255,8 +251,7 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
                         meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))
                         rewards[pull, int(pulls[pull])] = np.random.binomial(1, meanreward, 1)
                         cumulative_reward[pull] += rewards[pull, int(pulls[pull])]
-                        pulls[pull] += 1
-                        # empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                        pulls[pull] = 1
                     else:
                         delta = deltaZero / (K * np.power(i, alpha))
                         window = 1
@@ -268,7 +263,7 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
                             for k in range(len(K_filtering)):
                                 arm = K_filtering[k]
                                 for h in range(window):
-                                    rewards_windowed[k] += rewards[arm, int(pulls[arm] - 1 - h)]
+                                    rewards_windowed[k] += rewards[arm, int(pulls[arm] - h)]
                                 rewards_windowed[k] /= window
                             K_filtering = filterRotting(K_filtering, rewards_windowed, window, delta, sigma)
                             sub_pulls = pulls[K_filtering]
@@ -277,6 +272,7 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
                                 if pulls[arm] == window:
                                     filtering = False
                                     pull = K_filtering[np.argmin(sub_pulls)]
+                                    break
                             window += 1
 
                         meanreward = arms[pull] * np.exp(-arms[pull + K] * np.power(pulls[pull], pw))

@@ -66,26 +66,29 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw
 
 
 if __name__ == '__main__':
-    K_list = np.array([4])
+    K_list = np.array([2])
     varyingK = True if len(K_list) > 1 else False
     T_list = np.arange(1, 6) * 100
     m = 2
     numArmDists = 10
     alpha_ = 0.4  # can be used for both
-    beta_ = 0.01  # for rotting bandits
+    beta_ = 0.1  # for rotting bandits
     startSim = 0
     endSim = 10
     pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
     # larger pw means closer mean rewards in the arm instances generated
 
     # rotting bandits part
-    # rotting(K_list, T_list, numArmDists, alpha_, beta_, startSim, endSim, pw)
+    rotting(K_list, T_list, numArmDists, alpha_, beta_, startSim, endSim, pw)
+    exit()
 
     # fixed mean rewards throughout, m = 1
     # mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, pw)
+    # exit()
 
     # fixed mean rewards throughout, m > 1
-    mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, pw)
+    # mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, pw)
+    # exit()
 
     # DataFrames
     # df_ADAETC = pd.DataFrame({'T': T_list, 'Regret': ADAETC['regret'], 'Standard Error': ADAETC['standardError'],
