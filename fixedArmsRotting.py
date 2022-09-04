@@ -210,9 +210,10 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
         candidateArms = []
         confidence = np.sqrt(2 * sigmaHere * sigmaHere / windowHere * np.log(1 / deltaHere))
         highMu = max(armRewards)
-        for k in range(len(armIndices)):
-            if highMu <= armRewards[k] + 2 * confidence:
-                candidateArms.append(armIndices[k])
+        for kk in range(len(armIndices)):
+            if highMu <= armRewards[kk] + 2 * confidence:
+                candidateArms.append(armIndices[kk])
+
         return candidateArms
 
     # fix K and vary T values

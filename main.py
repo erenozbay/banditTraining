@@ -5,21 +5,28 @@ import time
 import fixedArms as fA
 import generateArms as gA
 import fixedArmsRotting as fAR
+from scipy.stats import nbinom
 
 
 # totalPeriods_ should be divisible by all values in m_vals, e.g., 12 periods, m_vals = [1, 2, 3, 6]
-def marketSim(meanK_, meanT_, numArmDists_, totalPeriods_, m_vals_, alpha__, startSim_, endSim_, pw_=0, beta__=0):
+def marketSim(meanK_, meanT_, numArmDists_, totalPeriods_, m_vals_, alpha__, startSim_, endSim_, oneOptPerPeriod=False):
     def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_):
         if m_ == 1:
-            ADAETC_ = fA.ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_)
+            ADAETC_ = fA.ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
             reward = ADAETC_['reward']
+            regret = ADAETC_['regret']
         else:
-            m_ADAETC_ = fA.m_ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_)
+            m_ADAETC_ = fA.m_ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
             reward = m_ADAETC_['reward']
-        return {'reward': reward}
+            regret = m_ADAETC_['regret']
+        return {'reward': reward,
+                'regret': regret}
 
     res = {}
+    resreg = {}
+    stdev = {}
     start_ = time.time()
+    res['best'] = 0
 
     # a single instance will run with multiple simulations
     # a single instance will have a fixed list of K and T for each period as well as arm means
@@ -38,24 +45,46 @@ def marketSim(meanK_, meanT_, numArmDists_, totalPeriods_, m_vals_, alpha__, sta
         # fix K and T streams
         K_list_ = np.random.poisson(meanK_, totalPeriods_)
         T_list_ = np.random.poisson(meanT_, totalPeriods_)
+        # geometric is too problematic, high variance, T may be smaller than K, K may be smaller than highest m, and so
+        # K_list_ = np.random.geometric(1 / meanK_, totalPeriods_) + max(m_vals_)
+        # T_list_ = K_list_ * 10
 
-        # generate arm means
+        # generate arm means, either each period has one optimal arm (across all periods) or no such arrangement is made
         armInstances_ = {}
-        for p in range(totalPeriods_):
-            armInstances_[str(p)] = gA.generateArms(np.array([K_list_[p]]), np.array([T_list_[p]]), 1, alpha__)
+        if oneOptPerPeriod:
+            allArmInstances_ = gA.generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
+                                                        numArmDists=1, alpha=alpha__, verbose=False)
+            allArmInstances_ = np.sort(allArmInstances_[0])
+            top_m = allArmInstances_[-m_vals_[-1]:]
+            col_start = 0
+            for p in range(totalPeriods_):
+                armInstances_[str(p)] = np.concatenate((top_m[p],
+                                                       allArmInstances_[col_start:(col_start + K_list_[p] - 1)]),
+                                                       axis=None)
+                col_start += K_list_[p]
+        else:
+            col_start = 0
+            allArmInstances_ = np.zeros(sum(K_list_))
+            for p in range(totalPeriods_):
+                armInstances_[str(p)] = gA.generateArms(K_list=np.array([K_list_[p]]), T_list=np.array([T_list_[p]]),
+                                                        numArmDists=1, alpha=alpha__, verbose=False)
+                allArmInstances_[col_start:(col_start + K_list_[p])] = np.array(armInstances_[str(p)])
+                col_start += K_list_[p]
 
+        # get the best arms in an instance
+        allArmInstances_ = np.sort(allArmInstances_)
+        best_top_m_avg_reward = np.mean(allArmInstances_[-m_vals_[-1]:])
+        total_T = sum(T_list_) / m_vals_[-1]
+
+        # for varying values of m
         for i in range(len(m_vals_)):
             # decide on the number of calls to simulation module and the corresponding m value
             m_val = m_vals_[i]  # say this is 3
-            res[str(m_val)] = 0
+            res['m = '+str(m_val)] = 0
+            resreg['reg: m = '+str(m_val)] = 0
             calls = int(totalPeriods_ / m_val)  # and this is 6 / 3 = 2
+            stdev_local = []
             for p in range(calls):  # so this will be 0, 1
-                # if m_val == 1:
-                #     arms_ = armInstances_[str(p)]
-                #     K_vals_ = K_list_[p]
-                #     T_vals_ = T_list_[p]
-                #     res[str(m_val)] += sim_small_mid_large_m(arms_, K_vals_, T_vals_, m_val)['reward'] / calls
-                # else:
                 indices = np.zeros(m_val)  # 1, 2, 3,        4,  5,  6
                 for j in range(m_val):
                     indices[j] = p * m_val + j  # mval = 3; p = 0, j = 0 => 0; p = 0, j = 1 => 1; p = 0, j = 2 => 2
@@ -75,10 +104,19 @@ def marketSim(meanK_, meanT_, numArmDists_, totalPeriods_, m_vals_, alpha__, sta
 
                 # run the multiple simulations
                 for t in range(endSim_ - startSim_):
-                    res[str(m_val)] += sim_small_mid_large_m(arms_, np.array([K_vals_]),
-                                                             np.array([T_vals_]), m_val)['reward'] / calls
+                    run = sim_small_mid_large_m(arms_, np.array([K_vals_]), np.array([T_vals_]), m_val)
+                    rew = run['reward'].item() / (calls * int(endSim_ - startSim_))
+                    reg = run['regret'].item() / (calls * int(endSim_ - startSim_))
+                    # .item() to get the value, not the array
+                    stdev_local.append(rew)
+                    res['m = '+str(m_val)] += rew
+                    resreg['reg: m = ' + str(m_val)] += reg
+                stdev['m = '+str(m_val)] = np.sqrt(np.var(np.array(stdev_local)) / int(endSim_ - startSim_))
 
-    return {'result': res}
+        res['best'] += total_T * best_top_m_avg_reward / numArmDists_
+    return {'result': res,
+            'regret': resreg,
+            'stDev': stdev}
 
 
 def rotting(K_list_, T_list_, numArmDists_, alpha__, beta__, startSim_, endSim_, pw_):
@@ -89,7 +127,7 @@ def rotting(K_list_, T_list_, numArmDists_, alpha__, beta__, startSim_, endSim_,
     naiveUCB1_ = fAR.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_, pw_)
     ADAETC_ = fAR.ADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_, pw_)
     rotting_ = fAR.Rotting(armInstances_, startSim_, endSim_, K_list_, T_list_, pw_,
-                           sigma=0.25, deltaZero=2, alpha=0.05)
+                           sigma=1, deltaZero=2, alpha=0.1)
     print("took " + str(time.time() - start_) + " seconds; alpha " + str(alpha__) + ", beta " + str(beta__))
 
     return {'UCB1': naiveUCB1_,
@@ -144,11 +182,11 @@ if __name__ == '__main__':
     varyingK = True if len(K_list) > 1 else False
     T_list = np.arange(1, 6) * 100
     m = 2
-    numArmDists = 1
-    alpha_ = 0.4  # can be used for both
+    numArmDists = 100
+    alpha_ = 0  # can be used for both
     beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 1
+    endSim = 100
     pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
     # larger pw means closer mean rewards in the arm instances generated
 
@@ -156,9 +194,12 @@ if __name__ == '__main__':
     meanK = 10
     meanT = 200
     totalPeriods = 6
-    m_vals = np.array([1, 2, 3])
-    market = marketSim(meanK, meanT, numArmDists, totalPeriods, m_vals, alpha_, startSim, endSim)
-    print(market['result'])
+    m_vals = np.array([1, 2, 3, 6])
+
+    market = marketSim(meanK, meanT, numArmDists, totalPeriods, m_vals, alpha_, startSim, endSim, oneOptPerPeriod=True)
+    print('Rewards', market['result'])
+    print('Standard deviation of rewards', market['stDev'])
+    print('Regrets', market['regret'])
 
     # rotting bandits part
     # rotting(K_list, T_list, numArmDists, alpha_, beta_, startSim, endSim, pw)

@@ -312,7 +312,7 @@ def ADAETC_sub(arms, K, T, RADA=False):
             "pulls": pulls}
 
 
-def ADAETC(armInstances, startSim, endSim, K_list, T_list):
+def ADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -344,8 +344,8 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
                 pull_arm = np.argmax(pulls)
 
                 largestPull = pulls[pull_arm]
-                interim = [aa for ii, aa in enumerate(pulls) if aa < largestPull]
-                secondLargestPull = max(interim)
+                # interim = [aa for ii, aa in enumerate(pulls) if aa < largestPull]
+                # secondLargestPull = max(interim)
 
                 cumreward_sim[a] += sum(cumulative_reward)
                 reward_sim[a] += max(cumulative_reward)
@@ -364,29 +364,30 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list):
         subOptRewards[t] = np.mean(subOptRewards_sim)
         # subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
 
-    print("ADAETC results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Standard errors", end=" ")
-    print(stError)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    print("Best Arm Rewards", end=" ")
-    print(reward)
-    print("Ratio of pulls spent on the most pulled arm to horizon T")
-    print(subOptRewards)
-    # print("Ratio of total cumulative rewards to the benchmark")
-    # print(subOptRewardsTot)
-    print()
+    if verbose:
+        print("ADAETC results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Standard errors", end=" ")
+        print(stError)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Ratio of pulls spent on the most pulled arm to horizon T")
+        print(subOptRewards)
+        # print("Ratio of total cumulative rewards to the benchmark")
+        # print(subOptRewardsTot)
+        print()
     return {'reward': reward,
             'regret': regret,
             'standardError': stError,
             'pullRatios': subOptRewards}
 
 
-def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m):
+def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -472,20 +473,21 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m):
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
 
-    print(str(m) + "-ADAETC results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Standard errors", end=" ")
-    print(stError)
-    print("Best Arms Rewards", end=" ")
-    print(reward)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    # print("Ratio of total cumulative rewards to the benchmark")
-    # print(subOptRewardsTot)
-    print()
+    if verbose:
+        print(str(m) + "-ADAETC results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Standard errors", end=" ")
+        print(stError)
+        print("Best Arms Rewards", end=" ")
+        print(reward)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        # print("Ratio of total cumulative rewards to the benchmark")
+        # print(subOptRewardsTot)
+        print()
     return {'reward': reward,
             'regret': regret,
             'standardError': stError}

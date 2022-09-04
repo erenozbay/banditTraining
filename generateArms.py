@@ -1,13 +1,14 @@
 import numpy as np
 
 
-def generateArms(K_list, T_list, numArmDists, alpha):
+def generateArms(K_list, T_list, numArmDists, alpha, verbose=True):
     ncol = sum(K_list) * len(T_list)
     armInstances = np.zeros((numArmDists, ncol))
 
     for i in range(numArmDists):
         armInstances[i, :] = np.random.uniform(alpha, 1 - alpha, ncol)
-    print(armInstances[0])
+    if verbose:
+        print(armInstances)
     return armInstances
 
 
