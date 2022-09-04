@@ -2,7 +2,7 @@ import numpy as np
 
 
 def generateArms(K_list, T_list, numArmDists, alpha, verbose=True):
-    ncol = sum(K_list) * len(T_list)
+    ncol = int(sum(K_list) * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
 
     for i in range(numArmDists):
@@ -13,7 +13,7 @@ def generateArms(K_list, T_list, numArmDists, alpha, verbose=True):
 
 
 def generateRottingArms(K, T_list, numArmDists, alpha, beta):
-    ncol = K * len(T_list)
+    ncol = int(K * len(T_list))
     armInstances = np.zeros((numArmDists, ncol * 2))
 
     for i in range(numArmDists):
@@ -27,7 +27,7 @@ def generateRottingArms(K, T_list, numArmDists, alpha, beta):
 
 
 def generateTwoArms(T_list, numArmDists, delta):
-    ncol = 2 * len(T_list)
+    ncol = int(2 * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
 
     for i in range(numArmDists):
@@ -45,7 +45,7 @@ def generateTwoArms(T_list, numArmDists, delta):
 
 # this should be made more clear and concise, basically I should be able to fix one arm and generate others with a gap
 def generateMultipleArms(K_list, T_list, numArmDists, pw=1 / 3):
-    ncol = sum(K_list) * len(T_list)
+    ncol = int(sum(K_list) * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
 
     if numArmDists > 1:
