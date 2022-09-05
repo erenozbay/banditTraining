@@ -11,11 +11,13 @@ from scipy.stats import nbinom
 # totalPeriods_ should be divisible by all values in m_vals, e.g., 12 periods, m_vals = [1, 2, 3, 6]
 def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
               alpha__, startSim_, endSim_, oneOptPerPeriod=False):
+
+    # calls ADA-ETC or m-ADA=ETC depending on the m_ value
     def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_):
         if m_ == 1:
             ADAETC_ = fA.ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
             # ADAETC_ = fA.m_ADAETC(armMeansArray_, 0, 1, arrayK_,
-            #                       arrayT_, 1, verbose=False)  # this reduces the exploration for m = 1 case
+            #                       arrayT_, 1, verbose=False)  # this shortens the exploration for m = 1 case
             reward = ADAETC_['reward']
             regret = ADAETC_['regret']
         else:
@@ -33,7 +35,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
 
     # a single instance will run with multiple simulations
     # a single instance will have a fixed list of K and T for each period as well as arm means
-    # with each instance, the finest model: small_m; midsize model: mid_m; and larger model: large_m will be called
+    # with each instance, ADA-ETC or m-ADA-ETC will be called
     # the ultimate average reward will be calculated based on what these models return and will be averaged over
     # simulations for that instance
     # no need for a global instance generation, the sequence can follow as
@@ -41,9 +43,9 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     # run however many simulations you need to run and report an average 'average reward' out of this step
     # then the final analysis will be made over averaging these instances
 
-    # fix numStreams_ many K and T streams
-    K_list_stream = {}  # np.zeros(totalPeriods_)
-    T_list_stream = {}  # np.zeros(totalPeriods_)
+    # fix numStreams_ many K and T streams, pay attention to the least number of arms required per period
+    K_list_stream = {}
+    T_list_stream = {}
     for st in range(numStreams_):
         res['stream_' + str(st)] = {}
         resreg['stream_' + str(st)] = {}
@@ -58,7 +60,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
             while sampling_K:
                 sample_K = int(np.random.poisson(meanK_, 1))
                 # sample_K = np.random.geometric(1 / meanK_, 1)
-                if sample_K >= 2 * max(m_vals_):
+                if sample_K >= max(2, 2 * max(m_vals_) / totalPeriods_):
                     K_list_[s] = sample_K
                     sampling_K = False
             while sampling_T:
@@ -69,8 +71,13 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                     sampling_T = False
         K_list_stream[str(st)] = K_list_
         T_list_stream[str(st)] = T_list_
-        # geometric has high variance, T may be smaller than K, K may be smaller than highest m, and so work is needed
 
+    # run the simulation for each (K, T)-pair
+    # fix (K, T) and following it, fix an instance with the correct number of arms, following the period-based K values
+    # here we have the option of (1) either generation one optimal arm per period (by keeping oneOptPerPeriod = True)
+    # which generates all the required arms across all periods, selects the best totalPeriods_-many of them and places
+    # one of each to every period, and the rest of the arms required for the periods are placed randomly; or
+    # (2) generate everything randomly
     for st in range(numStreams_):
         K_list_ = np.array(K_list_stream[str(st)])
         T_list_ = np.array(T_list_stream[str(st)])
@@ -84,14 +91,17 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
             if oneOptPerPeriod:
                 allArmInstances_ = gA.generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
                                                    numArmDists=1, alpha=alpha__, verbose=False)
+                # get the top totalPeriods_-many arms, put them aside in top_m and shuffle the remaining arms
                 allArmInstances_ = np.sort(allArmInstances_[0])
-                top_m = allArmInstances_[-m_vals_[-1]:]
+                top_m = allArmInstances_[-totalPeriods_:]
+                allArmInstances_ = allArmInstances_[:(int(sum(K_list_)) - totalPeriods_)]
+                np.random.shuffle(allArmInstances_)
                 col_s = 0
                 for p in range(totalPeriods_):
                     armInstances_[str(p)] = np.concatenate((top_m[p],
                                                             allArmInstances_[col_s:(col_s + int(K_list_[p]) - 1)]),
                                                            axis=None)
-                    col_s += int(K_list_[p])
+                    col_s += int(K_list_[p]) - 1
             else:
                 col_s = 0
                 allArmInstances_ = np.zeros(int(sum(K_list_)))
@@ -101,44 +111,50 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                                                             alpha=alpha__, verbose=False)
                     allArmInstances_[col_s:(col_s + int(K_list_[p]))] = np.array(armInstances_[str(p)])
                     col_s += int(K_list_[p])
+                allArmInstances_ = np.sort(allArmInstances_)
+                top_m = allArmInstances_[-totalPeriods_:]
 
-            # get the best arms in an instance
-            allArmInstances_ = np.sort(allArmInstances_)
-            best_top_m_avg_reward = np.mean(allArmInstances_[-m_vals_[-1]:])
-            total_T = sum(T_list_) / m_vals_[-1]
+            # get the average reward of the top m arms in an instance, in this case m = totalPeriods_
+            best_top_m_avg_reward = np.mean(top_m)
+            total_T = sum(T_list_) / totalPeriods_
 
-            # for varying values of m
+            # run multiple simulations for varying values of m
+            # if m = 1, every period is run individually and ADA-ETC is called using corresponding (K, T) pair
+            # if m > 1, then multiple periods are combined and m-ADA-ETC is called using corresponding (K, T) pair which
+            # for this case is summation of different K's and T's.
             for i in range(len(m_vals_)):
                 # decide on the number of calls to simulation module and the corresponding m value
                 m_val = m_vals_[i]  # say this is 3
                 res['stream_' + str(st)]['m = ' + str(m_val)] = 0
                 resreg['stream_' + str(st)]['reg: m = ' + str(m_val)] = 0
-                calls = int(totalPeriods_ / m_val)  # and this is 6 / 3 = 2
+                calls = int(totalPeriods_ / m_val)  # and this is 6 / 3 = 2, i.e., totalPeriods_ = 6
                 stdev_local = []
                 for p in range(calls):  # so this will be 0, 1
-                    indices = np.zeros(m_val)  # 1, 2, 3,        4,  5,  6
+                    indices = np.zeros(m_val)  # should look like 0, 1, 2;        3,  4,  5
                     for j in range(m_val):
-                        indices[j] = p * m_val + j  # mval = 3; p = 0, j = 0 => 0; p = 0, j = 1 => 1; p = 0, j = 2 => 2
+                        indices[j] = p * m_val + j  # so this does the below example
+                        # mval = 3; p = 0, j = 0 => 0; p = 0, j = 1 => 1; p = 0, j = 2 => 2
                         # mval = 3; p = 1, j = 0 => 3; p = 1, j = 1 => 4; p = 1, j = 2 => 5
+                    # properly combine K and T values if needed
                     K_vals_ = 0
                     T_vals_ = 0
                     for j in range(m_val):
                         K_vals_ += int(K_list_[int(indices[j])])
                         T_vals_ += int(T_list_[int(indices[j])])
 
+                    # depending on the K values, extract the correct set of arms
                     arms_ = np.zeros((1, int(K_vals_)))
                     col_start = 0
                     for j in range(m_val):
                         col_end = int(col_start + K_list_[int(indices[j])])
                         arms_[0, col_start:col_end] = armInstances_[str(int(indices[j]))]
                         col_start += int(K_list_[int(indices[j])])
-
                     # run the multiple simulations
                     for t in range(endSim_ - startSim_):
                         run = sim_small_mid_large_m(arms_, np.array([K_vals_]), np.array([T_vals_]), m_val)
                         rew = run['reward'].item() / (calls * int(endSim_ - startSim_))
                         reg = run['regret'].item() / (calls * int(endSim_ - startSim_))
-                        # .item() to get the value, not the array
+                        # .item() is used to get the value, not as array
                         stdev_local.append(rew)
                         res['stream_' + str(st)]['m = ' + str(m_val)] += rew
                         resreg['stream_' + str(st)]['reg: m = ' + str(m_val)] += reg
@@ -250,7 +266,7 @@ if __name__ == '__main__':
     T_list = np.arange(1, 6) * 100
     m = 2
     numArmDists = 100
-    alpha_ = 0  # can be used for both
+    alpha_ = 0.4  # can be used for both
     beta_ = 0.01  # for rotting bandits
     startSim = 0
     endSim = 100
@@ -258,13 +274,14 @@ if __name__ == '__main__':
     # larger pw means closer mean rewards in the arm instances generated
 
     # market-like simulation
-    meanK = 16
-    meanT = 250
+    meanK = 4  # we will have totalPeriods-many streams, so mean can be set based on that
+    meanT = 200
     numStreams = 1  # number of different K & T streams in total
-    totalPeriods = 8
-    m_vals = np.array([1, 2, 4, 8])
+    totalPeriods = 6
+    m_vals = np.array([1, 2, 3, 6])
     market = marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals,
                        alpha_, startSim, endSim, oneOptPerPeriod=False)
+    exit()
 
     # rotting bandits part
     # rotting(K_list, T_list, numArmDists, alpha_, beta_, startSim, endSim, pw)
