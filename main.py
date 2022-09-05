@@ -222,11 +222,11 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_, rng
     def init_res():
         res_ = {'UCB1': {}, 'ADAETC': {}, 'ETC': {}, 'NADAETC': {}, 'UCB1-s': {}}
 
-        res_['UCB1']['regret'] = []
-        res_['ADAETC']['regret'] = []
-        res_['ETC']['regret'] = []
-        res_['NADAETC']['regret'] = []
-        res_['UCB1-s']['regret'] = []
+        res_['UCB1']['Regret'] = []
+        res_['ADAETC']['Regret'] = []
+        res_['ETC']['Regret'] = []
+        res_['NADAETC']['Regret'] = []
+        res_['UCB1-s']['Regret'] = []
 
         res_['UCB1']['cumrew'] = []
         res_['ADAETC']['cumrew'] = []
@@ -237,30 +237,66 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_, rng
 
     def store_res(res_, dif, naiveUCB1__, ADAETC__, ETC__, NADAETC__, UCB1_stopping__):
         res_['UCB1']['regret_' + str(dif)] = naiveUCB1__['regret']
-        res_['UCB1']['regret'].append(naiveUCB1__['regret'][0])
+        res_['UCB1']['Regret'].append(naiveUCB1__['regret'][0])
         res_['UCB1']['cumrew_' + str(dif)] = naiveUCB1__['cumreward']
         res_['UCB1']['cumrew'].append(naiveUCB1__['cumreward'][0])
 
         res_['ADAETC']['regret_' + str(dif)] = ADAETC__['regret']
-        res_['ADAETC']['regret'].append(ADAETC__['regret'][0])
+        res_['ADAETC']['Regret'].append(ADAETC__['regret'][0])
         res_['ADAETC']['cumrew_' + str(dif)] = ADAETC__['cumreward']
         res_['ADAETC']['cumrew'].append(ADAETC__['cumreward'][0])
 
         res_['ETC']['regret_' + str(dif)] = ETC__['regret']
-        res_['ETC']['regret'].append(ETC__['regret'][0])
+        res_['ETC']['Regret'].append(ETC__['regret'][0])
         res_['ETC']['cumrew_' + str(dif)] = ETC__['cumreward']
         res_['ETC']['cumrew'].append(ETC__['cumreward'][0])
 
         res_['NADAETC']['regret_' + str(dif)] = NADAETC__['regret']
-        res_['NADAETC']['regret'].append(NADAETC__['regret'][0])
+        res_['NADAETC']['Regret'].append(NADAETC__['regret'][0])
         res_['NADAETC']['cumrew_' + str(dif)] = NADAETC__['cumreward']
         res_['NADAETC']['cumrew'].append(NADAETC__['cumreward'][0])
 
         res_['UCB1-s']['regret_' + str(dif)] = UCB1_stopping__['regret']
-        res_['UCB1-s']['regret'].append(UCB1_stopping__['regret'][0])
+        res_['UCB1-s']['Regret'].append(UCB1_stopping__['regret'][0])
         res_['UCB1-s']['cumrew_' + str(dif)] = UCB1_stopping__['cumreward']
         res_['UCB1-s']['cumrew'].append(UCB1_stopping__['cumreward'][0])
         return res_
+
+    def plot_varying_delta(res_, delt_, title='Regret'):
+        bw = 0.15  # bar width
+        naive_ucb1 = res_['UCB1'][title]
+        adaetc = res_['ADAETC'][title]
+        etc = res_['ETC'][title]
+        nadaetc = res_['NADAETC'][title]
+        ucb1s = res_['UCB1-s'][title]
+
+        bar1 = np.arange(len(naive_ucb1))
+        bar2 = [x + bw for x in bar1]
+        bar3 = [x + bw for x in bar2]
+        bar4 = [x + bw for x in bar3]
+        bar5 = [x + bw for x in bar4]
+        plt.figure(figsize=(12, 8), dpi=150)
+
+        plt.bar(bar1, adaetc, color='r', width=bw, edgecolor='grey', label='ADA-ETC')
+        plt.bar(bar2, etc, color='g', width=bw, edgecolor='grey', label='ETC')
+        plt.bar(bar3, nadaetc, width=bw, edgecolor='grey', label='NADA-ETC')
+        plt.bar(bar4, ucb1s, width=bw, edgecolor='grey', label='UCB1-s')
+        plt.bar(bar5, naive_ucb1, color='b', width=bw, edgecolor='grey', label='UCB1')
+
+        if title == 'cumrew':
+            chartTitle = 'Cumulative Reward'
+            plt.ylim(ymax=100)
+        elif title == 'Regret':
+            chartTitle = 'Regret'
+            plt.ylim(ymax=30)
+        plt.ylabel(chartTitle, fontsize=15)
+        plt.xlabel(r'$\Delta$', fontweight='bold', fontsize=15)
+        plt.xticks([x + bw for x in bar1], delt_)
+
+        plt.legend(loc="upper right") if title == 'Regret' else plt.legend(loc="upper left")
+        plt.savefig('res/2arms_halfAndHalfPlusDelta_'+title+'.eps', format='eps', bbox_inches='tight')
+        # plt.show()
+        plt.cla()
 
     print("Running m = 1")
     start_ = time.time()
@@ -280,34 +316,9 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_, rng
         res = store_res(res, i, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_)
     print("took " + str(time.time() - start_) + " seconds")
 
-    bw = 0.15  # bar width
-    naive_ucb1_regret = res['UCB1']['regret']
-    adaetc_regret = res['ADAETC']['regret']
-    etc_regret = res['ETC']['regret']
-    nadaetc_regret = res['NADAETC']['regret']
-    ucb1s_regret = res['UCB1-s']['regret']
+    plot_varying_delta(res, delt)
+    plot_varying_delta(res, delt, 'cumrew')
 
-    bar1 = np.arange(len(naive_ucb1_regret))
-    bar2 = [x + bw for x in bar1]
-    bar3 = [x + bw for x in bar2]
-    bar4 = [x + bw for x in bar3]
-    bar5 = [x + bw for x in bar4]
-    plt.figure(figsize=(12, 8), dpi=150)
-
-    plt.bar(bar1, adaetc_regret, color='r', width=bw, edgecolor='grey', label='ADA-ETC')
-    plt.bar(bar2, etc_regret, color='g', width=bw, edgecolor='grey', label='ETC')
-    plt.bar(bar3, nadaetc_regret, width=bw, edgecolor='grey', label='NADA-ETC')
-    plt.bar(bar4, ucb1s_regret, width=bw, edgecolor='grey', label='UCB1-s')
-    plt.bar(bar5, naive_ucb1_regret, color='b', width=bw, edgecolor='grey', label='UCB1')
-
-    plt.ylim(ymax=30)
-    plt.xlabel(r'$\Delta$', fontweight='bold', fontsize=15)
-    plt.ylabel('Regret', fontsize=15)
-    plt.xticks([x + bw for x in bar1], delt)
-
-    plt.legend(loc="upper right")
-    plt.savefig('res/2arms_halfAndHalfPlusDelta.eps', format='eps', bbox_inches='tight')
-    plt.show()
 
     return {'UCB1': naiveUCB1_,
             'ADAETC': ADAETC_,
