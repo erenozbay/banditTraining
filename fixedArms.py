@@ -121,6 +121,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, stime):
     # print(subOptRewardsTot)
     print()
     return {'reward': reward,
+            'cumreward': cumreward,
             'regret': regret,
             'standardError': stError,
             'pullRatios': subOptRewards,
@@ -136,6 +137,7 @@ def ETC(armInstances, startSim, endSim, K_list, T_list):
 
     regret = np.zeros(numT)
     reward = np.zeros(numT)
+    cumreward = np.zeros(numT)
     stError = np.zeros(numT)
     subOptRewards = np.zeros(numT)
     # subOptRewardsTot = np.zeros(numT)
@@ -143,6 +145,7 @@ def ETC(armInstances, startSim, endSim, K_list, T_list):
         T = T_list[t]
         regret_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
+        cumreward_sim = np.zeros(numInstance)
         subOptRewards_sim = np.zeros(numInstance)
         # subOptRewardsTot_sim = np.zeros(numInstance)
 
@@ -170,16 +173,19 @@ def ETC(armInstances, startSim, endSim, K_list, T_list):
                 interim = [a for i, a in enumerate(cumulative_reward) if a < largestCumRew]
                 secondLargestCumRew = max(interim)
                 reward_sim[a] += max(cumulative_reward)
+                cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
                 subOptRewards_sim[a] += (largestCumRew - secondLargestCumRew) / sum(cumulative_reward)
                 # subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
             regret_sim[a] /= (endSim - startSim)
             reward_sim[a] /= (endSim - startSim)
+            cumreward_sim[a] /= (endSim - startSim)
             subOptRewards_sim[a] /= (endSim - startSim)
             # subOptRewardsTot_sim[a] /= (endSim - startSim)
 
         regret[t] = np.mean(regret_sim)
         reward[t] = np.mean(reward_sim)
+        cumreward[t] = np.mean(cumreward_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
         # subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
@@ -199,6 +205,7 @@ def ETC(armInstances, startSim, endSim, K_list, T_list):
     # print(subOptRewardsTot)
     print()
     return {'reward': reward,
+            'cumreward': cumreward,
             'regret': regret,
             'standardError': stError,
             'pullRatios': subOptRewards}
@@ -382,6 +389,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
         # print(subOptRewardsTot)
         print()
     return {'reward': reward,
+            'cumreward': cumreward,
             'regret': regret,
             'standardError': stError,
             'pullRatios': subOptRewards}
@@ -489,6 +497,7 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
         # print(subOptRewardsTot)
         print()
     return {'reward': reward,
+            'cumreward': cumreward,
             'regret': regret,
             'standardError': stError}
 
@@ -501,11 +510,13 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m):
 
     regret = np.zeros(numT)
     reward = np.zeros(numT)
+    cumreward = np.zeros(numT)
     stError = np.zeros(numT)
     for t in range(numT):
         capT = T_list[t]
         regret_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
+        cumreward_sim = np.zeros(numInstance)
 
         for a in range(numInstance):
             arms = armInstances[a, (t * K):((t + 1) * K)]
@@ -525,12 +536,15 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m):
                 for i in range(m):
                     cumulative_reward = res[str(i)]['cumulative_reward']
                     reward_sim[a] += max(cumulative_reward) / m
+                    cumreward_sim[a] += sum(cumulative_reward) / m
                     regret_sim[a] -= max(cumulative_reward) / m
                 regret_sim[a] += first_m * int(capT / m)
 
             reward_sim[a] /= (endSim - startSim)
+            cumreward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
         reward[t] = np.mean(reward_sim)
+        cumreward[t] = np.mean(cumreward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
 
@@ -541,12 +555,15 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m):
     print(regret)
     print("Best Arms Rewards", end=" ")
     print(reward)
+    print("Total Cumulative Rewards", end=" ")
+    print(cumreward)
     print("Standard errors", end=" ")
     print(stError)
     # print("Ratio of total cumulative rewards to the benchmark")
     # print(subOptRewardsTot)
     print()
     return {'reward': reward,
+            'cumreward': cumreward,
             'regret': regret,
             'standardError': stError}
 
@@ -559,6 +576,7 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
 
     regret = np.zeros(numT)
     reward = np.zeros(numT)
+    cumreward = np.zeros(numT)
     stError = np.zeros(numT)
     subOptRewards = np.zeros(numT)
     # subOptRewardsTot = np.zeros(numT)
@@ -566,6 +584,7 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
         T = T_list[t]
         regret_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
+        cumreward_sim = np.zeros(numInstance)
         subOptRewards_sim = np.zeros(numInstance)
         # subOptRewardsTot_sim = np.zeros(numInstance)
 
@@ -616,14 +635,17 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
                 secondLargestCumRew = max(interim)
 
                 reward_sim[a] += max(cumulative_reward)
+                cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
                 subOptRewards_sim[a] += (largestCumRew - secondLargestCumRew) / sum(cumulative_reward)
                 # subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
             reward_sim[a] /= (endSim - startSim)
+            cumreward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
             subOptRewards_sim[a] /= (endSim - startSim)
             # subOptRewardsTot_sim[a] /= (endSim - startSim)
         reward[t] = np.mean(reward_sim)
+        cumreward[t] = np.mean(cumreward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
@@ -644,6 +666,7 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
     # print(subOptRewardsTot)
     print()
     return {'reward': reward,
+            'cumreward': cumreward,
             'regret': regret,
             'standardError': stError,
             'pullRatios': subOptRewards}
@@ -751,6 +774,7 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
 
     regret = np.zeros(numT)
     reward = np.zeros(numT)
+    cumreward = np.zeros(numT)
     stError = np.zeros(numT)
     subOptRewards = np.zeros(numT)
     # subOptRewardsTot = np.zeros(numT)
@@ -758,6 +782,7 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
         T = T_list[t]
         regret_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
+        cumreward_sim = np.zeros(numInstance)
         subOptRewards_sim = np.zeros(numInstance)
         # subOptRewardsTot_sim = np.zeros(numInstance)
 
@@ -810,15 +835,21 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
                 secondLargestCumRew = max(interim)
 
                 reward_sim[a] += max(cumulative_reward)
+                cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
                 subOptRewards_sim[a] += (largestCumRew - secondLargestCumRew) / sum(cumulative_reward)
+                # subOptRewardsTot_sim[a] += sum(cumulative_reward) / (max(arms) * T)
             reward_sim[a] /= (endSim - startSim)
+            cumreward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
             subOptRewards_sim[a] /= (endSim - startSim)
+            # subOptRewardsTot_sim[a] /= (endSim - startSim)
         reward[t] = np.mean(reward_sim)
+        cumreward[t] = np.mean(cumreward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
+        # subOptRewardsTot[t] = np.mean(subOptRewardsTot_sim)
 
     print("UCB1 with stopping results:")
     print("K: " + str(K) + ", and T: ", end=" ")
@@ -831,8 +862,11 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
     print(stError)
     print("Ratio of difference between two closest highest cumulative rewards to the total cumulative rewards")
     print(subOptRewards)
+    # print("Ratio of total cumulative rewards to the benchmark")
+    # print(subOptRewardsTot)
     print()
     return {'reward': reward,
+            'cumreward': cumreward,
             'regret': regret,
             'standardError': stError,
             'pullRatios': subOptRewards}
