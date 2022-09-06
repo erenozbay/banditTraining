@@ -197,6 +197,8 @@ def ETC(armInstances, startSim, endSim, K_list, T_list):
     print(regret)
     print("Best Arm Rewards", end=" ")
     print(reward)
+    print("Total Cumulative Rewards", end=" ")
+    print(cumreward)
     print("Standard errors", end=" ")
     print(stError)
     # print("Ratio of difference between two closest highest cumulative rewards to the total cumulative rewards")

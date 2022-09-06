@@ -229,6 +229,13 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         res_['UCB1-s']['Regret'] = []
         res_['SuccElim']['Regret'] = []
 
+        res_['UCB1']['Reward'] = []
+        res_['ADAETC']['Reward'] = []
+        res_['ETC']['Reward'] = []
+        res_['NADAETC']['Reward'] = []
+        res_['UCB1-s']['Reward'] = []
+        res_['SuccElim']['Reward'] = []
+
         res_['UCB1']['cumrew'] = []
         res_['ADAETC']['cumrew'] = []
         res_['ETC']['cumrew'] = []
@@ -242,34 +249,40 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         res_['UCB1']['Regret'].append(naiveUCB1__['regret'][0])
         res_['UCB1']['cumrew_' + str(dif)] = naiveUCB1__['cumreward']
         res_['UCB1']['cumrew'].append(naiveUCB1__['cumreward'][0])
+        res_['UCB1']['Reward'].append(naiveUCB1__['reward'][0])
 
         res_['ADAETC']['regret_' + str(dif)] = ADAETC__['regret']
         res_['ADAETC']['Regret'].append(ADAETC__['regret'][0])
         res_['ADAETC']['cumrew_' + str(dif)] = ADAETC__['cumreward']
         res_['ADAETC']['cumrew'].append(ADAETC__['cumreward'][0])
+        res_['ADAETC']['Reward'].append(ADAETC__['reward'][0])
 
         res_['ETC']['regret_' + str(dif)] = ETC__['regret']
         res_['ETC']['Regret'].append(ETC__['regret'][0])
         res_['ETC']['cumrew_' + str(dif)] = ETC__['cumreward']
         res_['ETC']['cumrew'].append(ETC__['cumreward'][0])
+        res_['ETC']['Reward'].append(ETC__['reward'][0])
 
         res_['NADAETC']['regret_' + str(dif)] = NADAETC__['regret']
         res_['NADAETC']['Regret'].append(NADAETC__['regret'][0])
         res_['NADAETC']['cumrew_' + str(dif)] = NADAETC__['cumreward']
         res_['NADAETC']['cumrew'].append(NADAETC__['cumreward'][0])
+        res_['NADAETC']['Reward'].append(NADAETC__['reward'][0])
 
         res_['UCB1-s']['regret_' + str(dif)] = UCB1_stopping__['regret']
         res_['UCB1-s']['Regret'].append(UCB1_stopping__['regret'][0])
         res_['UCB1-s']['cumrew_' + str(dif)] = UCB1_stopping__['cumreward']
         res_['UCB1-s']['cumrew'].append(UCB1_stopping__['cumreward'][0])
+        res_['UCB1-s']['Reward'].append(UCB1_stopping__['reward'][0])
 
         res_['SuccElim']['regret_' + str(dif)] = SuccElim__['regret']
         res_['SuccElim']['Regret'].append(SuccElim__['regret'][0])
         res_['SuccElim']['cumrew_' + str(dif)] = SuccElim__['cumreward']
         res_['SuccElim']['cumrew'].append(SuccElim__['cumreward'][0])
+        res_['SuccElim']['Reward'].append(SuccElim__['reward'][0])
         return res_
 
-    def plot_varying_delta(res_, delt_, title='Regret'):
+    def plot_varying_delta(res_, delt_, numSim, T_, title='Regret'):
         bw = 0.15  # bar width
         naive_ucb1 = res_['UCB1'][title]
         adaetc = res_['ADAETC'][title]
@@ -296,6 +309,9 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         if title == 'cumrew':
             chartTitle = 'Cumulative Reward'
             plt.ylim(ymax=100)
+        elif title == 'Reward':
+            chartTitle = 'Best Arm Reward'
+            plt.ylim(ymax=95)
         elif title == 'Regret':
             chartTitle = 'Regret'
             plt.ylim(ymax=30)
@@ -304,7 +320,8 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         plt.xticks([x + bw for x in bar1], delt_)
 
         plt.legend(loc="upper right") if title == 'Regret' else plt.legend(loc="upper left")
-        plt.savefig('res/2arms_halfAndHalfPlusDelta_'+title+'.eps', format='eps', bbox_inches='tight')
+        plt.savefig('res/2arms_halfAndHalfPlusDelta_'+title+'_' + str(numSim) + 'sims_T' + str(T_) + '.eps',
+                    format='eps', bbox_inches='tight')
         # plt.show()
         plt.cla()
 
@@ -325,8 +342,9 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         res = store_res(res, i, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_)
     print("took " + str(time.time() - start_) + " seconds")
 
-    plot_varying_delta(res, delt)
-    plot_varying_delta(res, delt, 'cumrew')
+    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0])
+    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0], 'cumrew')
+    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0], 'Reward')
 
     return {'UCB1': naiveUCB1_,
             'ADAETC': ADAETC_,
@@ -444,15 +462,15 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw
 
 
 if __name__ == '__main__':
-    K_list = np.array([25])
+    K_list = np.array([2])
     # varyingK = True if len(K_list) > 1 else False
-    T_list = np.arange(1, 6) * 100  # np.array([100])  #
+    T_list = np.array([100])  # np.arange(1, 6) * 100  #
     m = 5
-    numArmDists = 100
+    numArmDists = 1  # 100
     alpha_ = 0  # can be used for both
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 50
+    endSim = 10000
     pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
     # larger pw means closer mean rewards in the arm instances generated
 
@@ -475,8 +493,8 @@ if __name__ == '__main__':
     # exit()
 
     # fixed means but two arms, varying difference between means, m = 1
-    # mEqOne_2arms(K_list, T_list, startSim, endSim, rng=11)
-    # exit()
+    mEqOne_2arms(K_list, T_list, startSim, endSim, rng=11)
+    exit()
 
     # fixed mean rewards throughout, m > 1
     mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, pw)
