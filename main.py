@@ -218,7 +218,7 @@ def rotting(K_list_, T_list_, numArmDists_, alpha__, beta__, startSim_, endSim_,
             'Rotting': rotting_}
 
 
-def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
+def mEqOne_fixedGap(K_list_, T_list_, startSim_, endSim_, alpha__, generateIns_, rng=11):
     def init_res():
         res_ = {'UCB1': {}, 'ADAETC': {}, 'ETC': {}, 'NADAETC': {}, 'UCB1-s': {}, 'SuccElim': {}}
 
@@ -282,7 +282,7 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         res_['SuccElim']['Reward'].append(SuccElim__['reward'][0])
         return res_
 
-    def plot_varying_delta(res_, delt_, numSim, T_, title='Regret'):
+    def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, title='Regret'):
         bw = 0.15  # bar width
         naive_ucb1 = res_['UCB1'][title]
         adaetc = res_['ADAETC'][title]
@@ -306,22 +306,24 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         plt.bar(bar5, succ_elim, color='purple', width=bw, edgecolor='grey', label='SuccElim')
         plt.bar(bar6, naive_ucb1, color='b', width=bw, edgecolor='grey', label='UCB1')
 
+        chartTitle = ''
         if title == 'cumrew':
             chartTitle = 'Cumulative Reward'
-            plt.ylim(ymax=100)
+            # plt.ylim(ymax=100)
         elif title == 'Reward':
             chartTitle = 'Best Arm Reward'
-            plt.ylim(ymax=95)
+            # plt.ylim(ymax=80)
         elif title == 'Regret':
             chartTitle = 'Regret'
-            plt.ylim(ymax=30)
+            # plt.ylim(ymax=30)
         plt.ylabel(chartTitle, fontsize=15)
         plt.xlabel(r'$\Delta$', fontweight='bold', fontsize=15)
         plt.xticks([x + bw for x in bar1], delt_)
 
-        plt.legend(loc="upper right") if title == 'Regret' else plt.legend(loc="upper left")
-        plt.savefig('res/2arms_halfAndHalfPlusDelta_'+title+'_' + str(numSim) + 'sims_T' + str(T_) + '.eps',
-                    format='eps', bbox_inches='tight')
+        plt.legend(loc="upper left")
+        # plt.legend(loc="upper right") if title == 'Regret' else plt.legend(loc="upper left")
+        plt.savefig('res/' + str(K_) + 'arms_halfAndHalfPlusDelta_'+title+'_' + str(numSim) + 'sims_T' + str(T_) +
+                    '_' + str(generateIns__) + 'instances.eps', format='eps', bbox_inches='tight')
         # plt.show()
         plt.cla()
 
@@ -330,9 +332,11 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
     res = init_res()
     delt = np.zeros(rng)
     for i in range(rng):
+        print('Iteration ', i)
         delt[i] = round((1 / ((rng - 1) * 2)) * i, 3)
-        armInstances_ = gA.generateTwoArms(T_list_, 1, delta=np.ones(len(T_list_)) * delt[i])
-        print("Running m=1")
+        # armInstances_ = gA.generateTwoArms(T_list_, 1, delta=delt[i])
+        armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, generateIns_, alpha__, delta=delt[i], verbose=False)
+        # naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_ = 0, 0, 0, 0, 0, 0
         naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_, start_)
         ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_)
         ETC_ = fA.ETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
@@ -342,9 +346,9 @@ def mEqOne_2arms(K_list_, T_list_, startSim_, endSim_, rng=11):
         res = store_res(res, i, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_)
     print("took " + str(time.time() - start_) + " seconds")
 
-    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0])
-    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0], 'cumrew')
-    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0], 'Reward')
+    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0], K_list[0], generateIns_)
+    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0], K_list[0], generateIns_, 'cumrew')
+    plot_varying_delta(res, delt, endSim_ - startSim_, T_list_[0], K_list[0], generateIns_, 'Reward')
 
     return {'UCB1': naiveUCB1_,
             'ADAETC': ADAETC_,
@@ -462,15 +466,15 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw
 
 
 if __name__ == '__main__':
-    K_list = np.array([2])
+    K_list = np.array([4])
     # varyingK = True if len(K_list) > 1 else False
     T_list = np.array([100])  # np.arange(1, 6) * 100  #
     m = 5
     numArmDists = 1  # 100
-    alpha_ = 0  # can be used for both
+    alpha_ = 0.4  # can be used for both
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 10000
+    endSim = 100
     pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
     # larger pw means closer mean rewards in the arm instances generated
 
@@ -493,7 +497,9 @@ if __name__ == '__main__':
     # exit()
 
     # fixed means but two arms, varying difference between means, m = 1
-    mEqOne_2arms(K_list, T_list, startSim, endSim, rng=11)
+    mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, generateIns_=100, rng=11)
+    # generateIns_ takes the place of running with multiple arm instances
+    # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
     exit()
 
     # fixed mean rewards throughout, m > 1

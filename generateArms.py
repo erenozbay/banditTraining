@@ -34,12 +34,24 @@ def generateTwoArms(T_list, numArmDists, delta):
         arms = np.zeros(ncol)
         for j in range(len(T_list)):
             first = 0.5
-            second = 0.5 + delta[j]
+            second = 0.5 + delta
             arms[j * 2] = first
             arms[j * 2 + 1] = second
         armInstances[i, :] = arms
 
     print(armInstances[0])
+    return armInstances
+
+
+def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, delta, verbose=True):
+    ncol = int(sum(K_list) * len(T_list))
+    armInstances = np.zeros((numArmDists, ncol))
+
+    for i in range(numArmDists):
+        armInstances[i, :] = np.concatenate((np.random.uniform(alpha, 0.5, ncol - 2),
+                                             np.array([0.5]), np.array([0.5 + delta])))
+    if verbose:
+        print(armInstances)
     return armInstances
 
 
