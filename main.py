@@ -1,5 +1,5 @@
 import numpy as np
-import pandas as pd
+# import pandas as pd
 import matplotlib.pyplot as plt
 import time
 import fixedArms as fA
@@ -16,8 +16,6 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_):
         if m_ == 1:
             ADAETC_ = fA.ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
-            # ADAETC_ = fA.m_ADAETC(armMeansArray_, 0, 1, arrayK_,
-            #                       arrayT_, 1, verbose=False)  # this shortens the exploration for m = 1 case
             reward = ADAETC_['reward']
             regret = ADAETC_['regret']
         else:
@@ -175,7 +173,8 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
         for st in range(numStreams_):
             rewards['m = ' + str(m_vals_[j])] += res['stream_' + str(st)]['m = ' + str(m_val)] / numStreams_
             stdevs['m = ' + str(m_vals_[j])] += stdev['stream_' + str(st)]['m = ' + str(m_val)] / numStreams_
-            regrets['reg: m = ' + str(m_vals_[j])] += resreg['stream_' + str(st)]['reg: m = ' + str(m_val)] / numStreams_
+            regrets['reg: m = ' + str(m_vals_[j])] += resreg['stream_' + str(st)]['reg: m = ' + str(m_val)] \
+                                                      / numStreams_
             if once:
                 best_rewards += res['stream_' + str(st)]['best']
                 once = False
@@ -331,13 +330,13 @@ def mEqOne_fixedGap(K_list_, T_list_, startSim_, endSim_, alpha__, generateIns_,
     start_ = time.time()
     res = init_res()
     delt = np.zeros(rng)
+    naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_ = 0, 0, 0, 0, 0, 0
     for i in range(rng):
         print('Iteration ', i)
         delt[i] = round((1 / ((rng - 1) * 2)) * i, 3)
         # armInstances_ = gA.generateTwoArms(T_list_, 1, delta=delt[i])
         armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, generateIns_, alpha__, delta=delt[i], verbose=False)
-        # naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_ = 0, 0, 0, 0, 0, 0
-        naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_, start_)
+        naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_)
         ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_)
         ETC_ = fA.ETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
         NADAETC_ = fA.NADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
@@ -362,17 +361,19 @@ def mEqOne_fixedGap(K_list_, T_list_, startSim_, endSim_, alpha__, generateIns_,
 def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_):
 
     print("Running m = 1")
-    constant_c = 2
+    constant_c = 4
     start_ = time.time()
     armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__)
     # armInstances_ = gA.generateMultipleArms(K_list, T_list, numArmDists, pw_)
 
-    naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_, start_)
+    naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_)
     ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_)
     ETC_ = fA.ETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
     NADAETC_ = fA.NADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
     UCB1_stopping_ = fA.UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_)
     SuccElim_ = fA.SuccElim(armInstances_, startSim_, endSim_, K_list_, T_list_, constant_c)
+    # SuccElim2_ = fA.SuccElim(armInstances_, startSim_, endSim_, K_list_, T_list_, constant_c=2)
+    # SuccElim8_ = fA.SuccElim(armInstances_, startSim_, endSim_, K_list_, T_list_, constant_c=8)
 
     print("took " + str(time.time() - start_) + " seconds")
 
@@ -397,6 +398,12 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_):
     plt.plot(T_list, SuccElim_['regret'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
     plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
                  color='purple', fmt='o', markersize=4, capsize=4)
+    # plt.plot(T_list, SuccElim2_['regret'], color='purple', label='SuccElim (c=' + str(2) + ')')
+    # plt.errorbar(T_list, SuccElim2_['regret'], yerr=SuccElim2_['standardError'],
+    #              color='purple', fmt='o', markersize=4, capsize=4)
+    # plt.plot(T_list, SuccElim8_['regret'], color='purple', label='SuccElim (c=' + str(8) + ')')
+    # plt.errorbar(T_list, SuccElim8_['regret'], yerr=SuccElim8_['standardError'],
+    #              color='purple', fmt='o', markersize=4, capsize=4)
     plt.xticks(T_list)
     # plt.ylim(ymax=30)
     plt.ylabel('Regret', fontsize=15)
@@ -404,7 +411,8 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_):
 
     plt.legend(loc="upper left")
     plt.savefig('res/mEquals1_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' + str(endSim_ - startSim_) +
-                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '.eps', format='eps', bbox_inches='tight')
+                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +
+                '.eps', format='eps', bbox_inches='tight')
     plt.show()
     plt.cla()
 
@@ -466,12 +474,12 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw
 
 
 if __name__ == '__main__':
-    K_list = np.array([4])
+    K_list = np.array([2])
     # varyingK = True if len(K_list) > 1 else False
-    T_list = np.array([100])  # np.arange(1, 6) * 100  #
+    T_list = np.arange(1, 6) * 100  # np.array([100])  #
     m = 5
-    numArmDists = 1  # 100
-    alpha_ = 0.4  # can be used for both
+    numArmDists = 100
+    alpha_ = 0  # can be used for both
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
     endSim = 100
@@ -493,18 +501,18 @@ if __name__ == '__main__':
     # exit()
 
     # fixed mean rewards throughout, m = 1
-    # result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, pw)
-    # exit()
+    result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, pw)
+    exit()
 
     # fixed means but two arms, varying difference between means, m = 1
-    mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, generateIns_=100, rng=11)
+    # mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, generateIns_=numArmDists, rng=11)
     # generateIns_ takes the place of running with multiple arm instances
     # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
-    exit()
+    # exit()
 
     # fixed mean rewards throughout, m > 1
-    mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, pw)
-    exit()
+    # mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, pw)
+    # exit()
 
     # DataFrames
     # df_ADAETC = pd.DataFrame({'T': T_list, 'Regret': ADAETC['regret'], 'Standard Error': ADAETC['standardError'],
