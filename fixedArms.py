@@ -323,7 +323,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
 
                 cumreward_sim[a] += sum(cumulative_reward)
                 reward_sim[a] += max(cumulative_reward)
-                regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
+                regret_sim[a] += max(arms) * T - max(cumulative_reward)
                 subOptRewards_sim[a] += (largestPull / T)  # max(secondLargestPull, 1))
             cumreward_sim[a] /= (endSim - startSim)
             reward_sim[a] /= (endSim - startSim)
@@ -378,8 +378,6 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
             first_m = np.mean(arms[np.argsort(-arms)[0:m]])
 
             for j in range(endSim - startSim):
-                # np.random.seed(j)
-
                 empirical_mean = np.zeros(K)
                 pulls = np.zeros(K)
                 indexhigh = np.zeros(K)
@@ -585,7 +583,7 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
 
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
-                regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
+                regret_sim[a] += max(arms) * T - max(cumulative_reward)
             reward_sim[a] /= (endSim - startSim)
             cumreward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
@@ -770,7 +768,7 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
 
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
-                regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
+                regret_sim[a] += max(arms) * T - max(cumulative_reward)
                 largestPull = pulls[pull_arm]
                 subOptRewards_sim[a] += (largestPull / T)
 
@@ -966,7 +964,7 @@ def SuccElim(armInstances, startSim, endSim, K_list, T_list, constant_c):
 
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
-                regret_sim[a] += max(arms) * T - cumulative_reward[pull_arm]
+                regret_sim[a] += max(arms) * T - max(cumulative_reward)
                 subOptRewards_sim[a] += (largestPull / T)
 
             reward_sim[a] /= (endSim - startSim)
