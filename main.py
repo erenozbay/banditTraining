@@ -5,7 +5,7 @@ import time
 import fixedArms as fA
 import generateArms as gA
 import fixedArmsRotting as fAR
-from scipy.stats import nbinom
+# from scipy.stats import nbinom
 
 
 # totalPeriods_ should be divisible by all values in m_vals, e.g., 12 periods, m_vals = [1, 2, 3, 6]
@@ -380,10 +380,10 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, numOpt_,
     constant_c = 4
     start_ = time.time()
     if numOpt_ == 1:
-        armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__)
+        armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__, verbose=False)
     else:
-        armInstances_ = gA.generateArms_fixedDelta_deneme(K_list, T_list, numArmDists_, alpha__,
-                                                          numOpt_, delt_, verbose=False)
+        armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, numArmDists_, alpha__,
+                                                   numOpt_, delt_, verbose=False)
 
     naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_)
     ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_)
@@ -430,8 +430,8 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, numOpt_,
 
     plt.legend(loc="upper left")
     plt.savefig('res/mEquals1_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' + str(endSim_ - startSim_) +
-                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '_' + str(numOpt_) + 'optArms.eps',
-                format='eps', bbox_inches='tight')
+                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '_' + str(numOpt_) + 'optArms_delta' +
+                str(delt_) + '.eps', format='eps', bbox_inches='tight')
     # plt.show()
     plt.cla()
 
@@ -459,8 +459,8 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, numOpt_,
 
     plt.legend(loc="upper left")
     plt.savefig('res/mEquals1_noUCB_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' + str(endSim_ - startSim_) +
-                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +'_' + str(numOpt_) + 'optArms.eps',
-                format='eps', bbox_inches='tight')
+                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '_' + str(numOpt_) + 'optArms_delta' +
+                str(delt_) + '.eps', format='eps', bbox_inches='tight')
     plt.show()
     plt.cla()
 
@@ -522,12 +522,12 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw
 
 
 if __name__ == '__main__':
-    K_list = np.array([4])
+    K_list = np.array([10])
     # varyingK = True if len(K_list) > 1 else False
     T_list = np.arange(1, 6) * 100  # np.array([100])  #
     m = 1
     numArmDists = 50
-    alpha_ = 0.4  # can be used for both
+    alpha_ = 0  # can be used for both
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
     endSim = 50
@@ -545,16 +545,17 @@ if __name__ == '__main__':
     # exit()
 
     # fixed mean rewards throughout, m = 1
-    result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, numOpt_=2, delt_=0.1)
-    exit()
+    # result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, numOpt_=5, delt_=0.3)
+    # exit()
 
     # fixed means but difference is specified between two best arms, varying difference between means, m = 1
-    # mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, numOpt_=5, generateIns_=numArmDists, rng=11)
+    mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, numOpt_=5, generateIns_=numArmDists, rng=11)
+    exit()
     # generateIns_ takes the place of running with multiple arm instances
     # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
     # change numOpt to >1 to generate K - numOpt - 1 random arms in uniform(0, 0.5), one at exactly 0.5,
     # and numOpt many with delta distance to 0.5
-    # exit()
+
 
     # fixed mean rewards throughout, m > 1
     # mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, pw)

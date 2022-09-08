@@ -1,6 +1,6 @@
 import numpy as np
-import time
-import random
+# import time
+# import random
 
 
 def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
@@ -280,7 +280,8 @@ def ADAETC_sub(arms, K, T, RADA=False):
         indexhigh_copy = indexhigh.copy()
         indexhigh_copy[lcb] = -1
         ucb = np.argmax(indexhigh_copy)
-        if indexlow[lcb] > indexhigh[ucb]:
+        if (indexlow[lcb] > indexhigh[ucb]) or \
+                ((indexlow[lcb] >= indexhigh[ucb]) and (pulls[lcb] >= pullEach) and (pulls[ucb] >= pullEach)):
             pull_arm = lcb
             break
     cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
@@ -535,11 +536,14 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
     reward = np.zeros(numT)
     cumreward = np.zeros(numT)
     stError = np.zeros(numT)
+    subOptRewards = np.zeros(numT)
+
     for t in range(numT):
         T = T_list[t]
         regret_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
         cumreward_sim = np.zeros(numInstance)
+        subOptRewards_sim = np.zeros(numInstance)
 
         for a in range(numInstance):
             arms = armInstances[a, (t * K):((t + 1) * K)]
@@ -576,21 +580,26 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
                     indexhigh_copy = indexhigh.copy()
                     indexhigh_copy[lcb] = -1
                     ucb = np.argmax(indexhigh_copy)
+                    pull_arm = lcb
                     if indexlow[lcb] > indexhigh[ucb]:
-                        pull_arm = lcb
                         break
                 cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
 
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
+                # largestPull =
+                subOptRewards_sim[a] += (max(pulls) / T)
             reward_sim[a] /= (endSim - startSim)
             cumreward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
+            subOptRewards_sim[a] /= (endSim - startSim)
+
         reward[t] = np.mean(reward_sim)
         cumreward[t] = np.mean(cumreward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
+        subOptRewards[t] = np.mean(subOptRewards_sim)
 
     print("NADAETC results:")
     print("K: " + str(K) + ", and T: ", end=" ")
@@ -603,6 +612,8 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
     print(stError)
     print("Total Cumulative Rewards", end=" ")
     print(cumreward)
+    print("Ratio of pulls spent on the most pulled arm to horizon T")
+    print(subOptRewards)
     print()
     return {'reward': reward,
             'cumreward': cumreward,
@@ -760,8 +771,8 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
                     indexhigh_copy = indexhigh.copy()
                     indexhigh_copy[lcb] = -1
                     ucb = np.argmax(indexhigh_copy)
+                    pull_arm = lcb
                     if indexlow[lcb] > indexhigh[ucb]:
-                        pull_arm = lcb
                         break
                 cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
                 pulls[pull_arm] += int(T - sum(pulls))
@@ -769,8 +780,8 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
-                largestPull = pulls[pull_arm]
-                subOptRewards_sim[a] += (largestPull / T)
+                # largestPull = pulls[pull_arm]
+                subOptRewards_sim[a] += (max(pulls) / T)
 
             reward_sim[a] /= (endSim - startSim)
             cumreward_sim[a] /= (endSim - startSim)

@@ -116,6 +116,7 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, pw):
                 cumulative_reward = np.zeros(K)
                 pullEach = int(np.ceil(np.power(T, 2 / 3)))
                 pull_arm = 0
+                stoppedTime = T
                 for i in range(T):
                     if i < K:
                         pull = i
@@ -246,6 +247,7 @@ def Rotting(armInstances, startSim, endSim, K_list, T_list, pw, sigma, deltaZero
                 pulls = np.zeros(K)
                 cumulative_reward = np.zeros(K)
                 rewards = np.zeros((K, T))
+                pull = 0
                 for i in range(T):
                     if i < K:
                         pull = i

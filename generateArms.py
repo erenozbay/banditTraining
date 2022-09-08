@@ -9,6 +9,8 @@ def generateArms(K_list, T_list, numArmDists, alpha, verbose=True):
         armInstances[i, :] = np.random.uniform(alpha, 1 - alpha, ncol)
     if verbose:
         print(armInstances)
+    else:
+        print(armInstances[0])
     return armInstances
 
 
@@ -43,7 +45,7 @@ def generateTwoArms(T_list, numArmDists, delta):
     return armInstances
 
 
-def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, verbose=True):
+def generateArms_fixedDelta_old(K_list, T_list, numArmDists, alpha, numOpt, delta, verbose=True):
     ncol = int(sum(K_list) * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
 
@@ -57,7 +59,7 @@ def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, v
     return armInstances
 
 
-def generateArms_fixedDelta_deneme(K_list, T_list, numArmDists, alpha, numOpt, delta, verbose=True):
+def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, verbose=True):
     ncol = int(sum(K_list) * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
     K = K_list[0]
@@ -67,6 +69,7 @@ def generateArms_fixedDelta_deneme(K_list, T_list, numArmDists, alpha, numOpt, d
         for t in range(len(T_list)):
             arms = np.concatenate((np.random.uniform(alpha, 0.5, K - numOpt - 1),
                                    np.array([0.5]), np.ones(numOpt) * (0.5 + delta)))
+            np.random.shuffle(arms)
             armInstances[i, col:(col + K)] = arms
             col += K
     if verbose:
