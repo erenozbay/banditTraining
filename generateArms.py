@@ -57,6 +57,25 @@ def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, v
     return armInstances
 
 
+def generateArms_fixedDelta_deneme(K_list, T_list, numArmDists, alpha, numOpt, delta, verbose=True):
+    ncol = int(sum(K_list) * len(T_list))
+    armInstances = np.zeros((numArmDists, ncol))
+    K = K_list[0]
+
+    for i in range(numArmDists):
+        col = 0
+        for t in range(len(T_list)):
+            arms = np.concatenate((np.random.uniform(alpha, 0.5, K - numOpt - 1),
+                                   np.array([0.5]), np.ones(numOpt) * (0.5 + delta)))
+            armInstances[i, col:(col + K)] = arms
+            col += K
+    if verbose:
+        print(armInstances)
+    else:
+        print(armInstances[0])
+    return armInstances
+
+
 # this should be made more clear and concise, basically I should be able to fix one arm and generate others with a gap
 def generateMultipleArms(K_list, T_list, numArmDists, pw=1 / 3):
     ncol = int(sum(K_list) * len(T_list))

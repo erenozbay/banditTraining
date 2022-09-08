@@ -375,12 +375,15 @@ def mEqOne_fixedGap(K_list_, T_list_, startSim_, endSim_, alpha__, numOpt_, gene
             'fullRes': res}
 
 
-def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_):
+def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, numOpt_, delt_):
     print("Running m = 1")
     constant_c = 4
     start_ = time.time()
-    armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__)
-    # armInstances_ = gA.generateMultipleArms(K_list, T_list, numArmDists, pw_)
+    if numOpt_ == 1:
+        armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__)
+    else:
+        armInstances_ = gA.generateArms_fixedDelta_deneme(K_list, T_list, numArmDists_, alpha__,
+                                                          numOpt_, delt_, verbose=False)
 
     naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_)
     ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_)
@@ -427,8 +430,8 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_):
 
     plt.legend(loc="upper left")
     plt.savefig('res/mEquals1_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' + str(endSim_ - startSim_) +
-                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +
-                '.eps', format='eps', bbox_inches='tight')
+                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '_' + str(numOpt_) + 'optArms.eps',
+                format='eps', bbox_inches='tight')
     # plt.show()
     plt.cla()
 
@@ -456,8 +459,8 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, pw_):
 
     plt.legend(loc="upper left")
     plt.savefig('res/mEquals1_noUCB_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' + str(endSim_ - startSim_) +
-                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +
-                '.eps', format='eps', bbox_inches='tight')
+                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +'_' + str(numOpt_) + 'optArms.eps',
+                format='eps', bbox_inches='tight')
     plt.show()
     plt.cla()
 
@@ -521,13 +524,13 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw
 if __name__ == '__main__':
     K_list = np.array([4])
     # varyingK = True if len(K_list) > 1 else False
-    T_list = np.array([100])  # np.arange(1, 6) * 100  #
+    T_list = np.arange(1, 6) * 100  # np.array([100])  #
     m = 1
-    numArmDists = 250
-    alpha_ = 0  # can be used for both
+    numArmDists = 50
+    alpha_ = 0.4  # can be used for both
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 250
+    endSim = 50
     pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
     # larger pw means closer mean rewards in the arm instances generated
 
@@ -542,11 +545,11 @@ if __name__ == '__main__':
     # exit()
 
     # fixed mean rewards throughout, m = 1
-    # result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, pw)
-    # exit()
+    result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, numOpt_=2, delt_=0.1)
+    exit()
 
     # fixed means but difference is specified between two best arms, varying difference between means, m = 1
-    mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, numOpt_=2, generateIns_=numArmDists, rng=11)
+    # mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, numOpt_=5, generateIns_=numArmDists, rng=11)
     # generateIns_ takes the place of running with multiple arm instances
     # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
     # change numOpt to >1 to generate K - numOpt - 1 random arms in uniform(0, 0.5), one at exactly 0.5,
