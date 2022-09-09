@@ -598,7 +598,9 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
+                                        # 2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+
                         indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
                     else:
                         pull = np.argmax(indexhigh)
@@ -607,7 +609,9 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
+                                        # 2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+
                         indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
 
                     lcb = np.argmax(indexlow)
@@ -618,6 +622,7 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
                     if indexlow[lcb] > indexhigh[ucb]:
                         break
                 cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
+                pulls[pull_arm] += int(T - sum(pulls))
 
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
@@ -658,7 +663,8 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
             'cumReg': cumReg,
             'standardError_perSim': np.sqrt(np.var(stError_perSim) / (endSim - startSim)),
             'regret': regret,
-            'standardError': stError}
+            'standardError': stError,
+            'maxPulls': subOptRewards}
 
 
 def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m):
@@ -796,9 +802,9 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
                         indexlow[pull] = empirical_mean[pull] - \
-                                         2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                         1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
                     else:
                         pull = np.argmax(indexhigh)
                         rew = np.random.binomial(1, arms[pull], 1)
@@ -806,9 +812,9 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
                         indexlow[pull] = empirical_mean[pull] - \
-                                         2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                         1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
 
                     lcb = np.argmax(indexlow)
                     indexhigh_copy = indexhigh.copy()

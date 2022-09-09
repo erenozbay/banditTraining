@@ -353,7 +353,8 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
     succ_elim = res_['SuccElim']
     succ_elim6 = res_['SuccElim6']
 
-    bar1 = np.arange(len(naive_ucb1[title]))
+    length = len(naive_ucb1[title]) if title != 'cumReg' else len(naive_ucb1[title]) - 1
+    bar1 = np.arange(length)
     bar2 = [x + bw for x in bar1]
     bar3 = [x + bw for x in bar2]
     bar4 = [x + bw for x in bar3]
@@ -362,19 +363,22 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
     bar7 = [x + bw for x in bar5]
     plt.figure(figsize=(12, 8), dpi=150)
 
-    print(nadaetc[title])
-    print(nadaetc['standardError'])
+    # print(nadaetc[title])
+    # print(nadaetc['standardError'])
 
-    plt.bar(bar1, adaetc[title], yerr=adaetc['standardError'], color='r', width=bw, edgecolor='grey', label='ADA-ETC')
-    plt.bar(bar2, etc[title], yerr=etc['standardError'], color='g', width=bw, edgecolor='grey', label='ETC')
-    plt.bar(bar3, nadaetc[title], yerr=nadaetc['standardError'], color='magenta',
+    plt.bar(bar1, adaetc[title][-length:], yerr=adaetc['standardError'][-length:], color='r',
+            width=bw, edgecolor='grey', label='ADA-ETC')
+    plt.bar(bar2, etc[title][-length:], yerr=etc['standardError'][-length:], color='g',
+            width=bw, edgecolor='grey', label='ETC')
+    plt.bar(bar3, nadaetc[title][-length:], yerr=nadaetc['standardError'][-length:], color='magenta',
             width=bw, edgecolor='grey', label='NADA-ETC')
-    plt.bar(bar4, ucb1s[title], yerr=ucb1s['standardError'], color='navy', width=bw, edgecolor='grey', label='UCB1-s')
-    plt.bar(bar5, succ_elim[title], yerr=succ_elim['standardError'], color='purple',
+    plt.bar(bar4, ucb1s[title][-length:], yerr=ucb1s['standardError'][-length:], color='navy',
+            width=bw, edgecolor='grey', label='UCB1-s')
+    plt.bar(bar5, succ_elim[title][-length:], yerr=succ_elim['standardError'][-length:], color='purple',
             width=bw, edgecolor='grey', label='SuccElim - c(4)')
     # plt.bar(bar6, succ_elim6[title], color='violet', width=bw, edgecolor='grey', label='SuccElim - c(6)')
     if UCBin_:
-        plt.bar(bar7, naive_ucb1[title], yerr=naive_ucb1['standardError'], color='b',
+        plt.bar(bar7, naive_ucb1[title][-length:], yerr=naive_ucb1['standardError'][-length:], color='b',
                 width=bw, edgecolor='grey', label='UCB1')
 
     chartTitle = ''
@@ -392,7 +396,7 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
         # plt.ylim(ymax=92)
     plt.ylabel(chartTitle, fontsize=15)
     plt.xlabel(r'$\Delta$', fontweight='bold', fontsize=15)
-    plt.xticks([x + bw for x in bar1], delt_)
+    plt.xticks([x + bw for x in bar1], delt_[-length:])
 
     plt.legend(loc="upper left")
     # plt.legend(loc="upper right") if title == 'Regret' else plt.legend(loc="upper left")
@@ -499,8 +503,8 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, numOpt_,
     plt.xlabel('T', fontsize=15)
 
     plt.legend(loc="upper left")
-    plt.savefig('res/mEquals1_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' + str(endSim_ - startSim_) +
-                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '_' + str(numOpt_) + 'optArms_delta' +
+    plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' +
+                str(endSim_ - startSim_) + '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '_delta' +
                 str(delt_) + '.eps', format='eps', bbox_inches='tight')
     # plt.show()
     plt.cla()
@@ -528,9 +532,9 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, numOpt_,
     plt.xlabel('T', fontsize=15)
 
     plt.legend(loc="upper left")
-    plt.savefig('res/mEquals1_noUCB_K' + str(K_list_[0]) + '_alpha' + str(alpha__) + '_sim' + str(endSim_ - startSim_) +
-                '_armDist' + str(numArmDists_) + '_c' + str(constant_c) + '_' + str(numOpt_) + 'optArms_delta' +
-                str(delt_) + '.eps', format='eps', bbox_inches='tight')
+    plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_noUCB_alpha' + str(alpha__) +
+                '_sim' + str(endSim_ - startSim_) + '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +
+                '_delta' + str(delt_) + '.eps', format='eps', bbox_inches='tight')
     plt.show()
     plt.cla()
 
@@ -592,11 +596,11 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, pw
 
 
 if __name__ == '__main__':
-    K_list = np.array([2])
+    K_list = np.array([20])
     # varyingK = True if len(K_list) > 1 else False
-    T_list = np.array([100])  # np.arange(1, 6) * 100  # np.array([100])  #
+    T_list = np.arange(1, 6) * 100  # np.array([100])  # np.array([100])  #
     m = 1
-    numArmDists = 1
+    numArmDists = 100
     alpha_ = 0  # can be used for both
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
@@ -615,8 +619,8 @@ if __name__ == '__main__':
     # exit()
 
     # fixed mean rewards throughout, m = 1
-    # result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, numOpt_=2, delt_=0.3)
-    # exit()
+    result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, numOpt_=1, delt_=0.3)
+    exit()
 
     # fixed means but difference is specified between two best arms, varying difference between means, m = 1
     mEqOne_fixedGap(K_list, T_list, startSim, endSim, alpha_, numOpt_=1, generateIns_=numArmDists, rng=11)
