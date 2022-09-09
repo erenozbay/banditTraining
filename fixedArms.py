@@ -3,7 +3,7 @@ import numpy as np
 # import random
 
 
-def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
+def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -93,31 +93,31 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
             switch[i, t] = np.mean(switch_sim[i])
             switch_stError[i, t] = np.sqrt(np.var(switch_sim[i]) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
-
-    print("Naive UCB1 results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Standard errors", end=" ")
-    print(stError)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    print("Best Arm Rewards", end=" ")
-    print(reward)
-    print("Ratio of pulls spent on the most pulled arm to horizon T")
-    print(subOptRewards)
-    # print("Number of switches between arms")
-    # for i in range(4):
-    #     print("Quarter ", i)
-    #     print(switch[i])
-    print('Number of switches between arms ', end='')
-    print(switch[0] + switch[1] + switch[2] + switch[3])
-    # print("And their standard errors - nonzero if there are multiple arm instances")
-    # for i in range(4):
-    #     print("Quarter ", i)
-    #     print(switch_stError[i])
-    print()
+    if verbose:
+        print("Naive UCB1 results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Standard errors", end=" ")
+        print(stError)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Ratio of pulls spent on the most pulled arm to horizon T")
+        print(subOptRewards)
+        # print("Number of switches between arms")
+        # for i in range(4):
+        #     print("Quarter ", i)
+        #     print(switch[i])
+        print('Number of switches between arms ', end='')
+        print(switch[0] + switch[1] + switch[2] + switch[3])
+        # print("And their standard errors - nonzero if there are multiple arm instances")
+        # for i in range(4):
+        #     print("Quarter ", i)
+        #     print(switch_stError[i])
+        print()
     return {'reward': reward,
             'cumreward': cumreward,
             'cumReg': cumReg,
@@ -129,7 +129,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list):
             'numSwitchErrors': switch_stError}
 
 
-def ETC(armInstances, startSim, endSim, K_list, T_list):
+def ETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -182,19 +182,19 @@ def ETC(armInstances, startSim, endSim, K_list, T_list):
         cumreward[t] = np.mean(cumreward_sim)
         cumReg[t] = np.mean(cumReg_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
-
-    print("ETC results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Best Arm Rewards", end=" ")
-    print(reward)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    print("Standard errors", end=" ")
-    print(stError)
-    print()
+    if verbose:
+        print("ETC results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Standard errors", end=" ")
+        print(stError)
+        print()
     return {'reward': reward,
             'cumreward': cumreward,
             'cumReg': cumReg,
@@ -203,7 +203,7 @@ def ETC(armInstances, startSim, endSim, K_list, T_list):
             'standardError': stError}
 
 
-def m_ETC(armInstances, startSim, endSim, K_list, T_list, m):
+def m_ETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -245,17 +245,17 @@ def m_ETC(armInstances, startSim, endSim, K_list, T_list, m):
         regret[t] = np.mean(regret_sim)
         reward[t] = np.mean(reward_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
-
-    print(str(m) + "-ETC results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Best Arms Rewards", end=" ")
-    print(reward)
-    print("Standard errors", end=" ")
-    print(stError)
-    print()
+    if verbose:
+        print(str(m) + "-ETC results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Best Arms Rewards", end=" ")
+        print(reward)
+        print("Standard errors", end=" ")
+        print(stError)
+        print()
     return {'reward': reward,
             'regret': regret,
             'standardError': stError}
@@ -449,8 +449,8 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
                     indexhigh_copy = indexhigh.copy()
                     indexhigh_copy[lcb_set[0:m]] = -1  # make sure that correct arms are excluded from max UCB step
                     ucb = np.argsort(-indexhigh_copy)[0]
+                    pullset = lcb_set[0:m]
                     if indexlow[lcb] > indexhigh[ucb]:
-                        pullset = lcb_set[0:m]
                         stopped = i + 1
                         break
 
@@ -490,7 +490,7 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
             'standardError': stError}
 
 
-def RADAETC(armInstances, startSim, endSim, K_list, T_list, m):
+def RADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -537,19 +537,19 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m):
         cumreward[t] = np.mean(cumreward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
-
-    print(str(m) + "-RADAETC results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Best Arms Rewards", end=" ")
-    print(reward)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    print("Standard errors", end=" ")
-    print(stError)
-    print()
+    if verbose:
+        print(str(m) + "-RADAETC results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Best Arms Rewards", end=" ")
+        print(reward)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Standard errors", end=" ")
+        print(stError)
+        print()
     return {'reward': reward,
             'cumreward': cumreward,
             'regret': regret,
@@ -726,8 +726,8 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
                     indexhigh_copy = indexhigh.copy()
                     indexhigh_copy[lcb_set[0:m]] = -1  # make sure that correct arms are excluded from max UCB step
                     ucb = np.argsort(-indexhigh_copy)[0]
+                    pullset = lcb_set[0:m]
                     if indexlow[lcb] > indexhigh[ucb]:
-                        pullset = lcb_set[0:m]
                         stopped = i + 1
                         break
 
@@ -761,7 +761,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
             'standardError': stError}
 
 
-def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
+def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -846,21 +846,21 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
-
-    print("UCB1 with stopping results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Best Arm Rewards", end=" ")
-    print(reward)
-    print("Standard errors", end=" ")
-    print(stError)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    print("Ratio of pulls spent on the most pulled arm to horizon T")
-    print(subOptRewards)
-    print()
+    if verbose:
+        print("UCB1 with stopping results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Standard errors", end=" ")
+        print(stError)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Ratio of pulls spent on the most pulled arm to horizon T")
+        print(subOptRewards)
+        print()
     return {'reward': reward,
             'cumreward': cumreward,
             'cumReg': cumReg,
@@ -869,7 +869,7 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list):
             'standardError': stError}
 
 
-def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m):
+def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -930,8 +930,8 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m):
                     indexhigh_copy = indexhigh.copy()
                     indexhigh_copy[lcb_set[0:m]] = -1  # make sure that correct arms are excluded from max UCB step
                     ucb = np.argsort(-indexhigh_copy)[0]
+                    pullset = lcb_set[0:m]
                     if indexlow[lcb] > indexhigh[ucb]:
-                        pullset = lcb_set[0:m]
                         stopped = i + 1
                         break
 
@@ -949,23 +949,23 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m):
         reward[t] = np.mean(reward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
-
-    print(str(m) + "-UCB1 with stopping results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Best Arm Rewards", end=" ")
-    print(reward)
-    print("Standard errors", end=" ")
-    print(stError)
-    print()
+    if verbose:
+        print(str(m) + "-UCB1 with stopping results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Standard errors", end=" ")
+        print(stError)
+        print()
     return {'reward': reward,
             'regret': regret,
             'standardError': stError}
 
 
-def SuccElim(armInstances, startSim, endSim, K_list, T_list, constant_c):
+def SuccElim(armInstances, startSim, endSim, K_list, T_list, constant_c, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -1050,21 +1050,21 @@ def SuccElim(armInstances, startSim, endSim, K_list, T_list, constant_c):
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
-
-    print("Successive elimination results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Standard errors", end=" ")
-    print(stError)
-    print("Best Arm Rewards", end=" ")
-    print(reward)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    print("Ratio of pulls spent on the most pulled arm to horizon T")
-    print(subOptRewards)
-    print()
+    if verbose:
+        print("Successive elimination results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Standard errors", end=" ")
+        print(stError)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Ratio of pulls spent on the most pulled arm to horizon T")
+        print(subOptRewards)
+        print()
     return {'reward': reward,
             'cumreward': cumreward,
             'cumReg': cumReg,

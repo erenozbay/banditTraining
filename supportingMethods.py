@@ -8,25 +8,77 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, alg):
     reward = -1e8
     regret = 1e8
     if m_ == 1:
-        if alg == 'ADAETC':
+        if alg == 'ada' or alg == 'rada':
             ADAETC_ = fA.ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
             reward = ADAETC_['reward']
             regret = ADAETC_['regret']
-        elif alg == 'NADAETC':
+        elif alg == 'nada':
             NADAETC_ = fA.NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
             reward = NADAETC_['reward']
             regret = NADAETC_['regret']
+        elif alg == 'ucb1s':
+            UCB1_stopping_ = fA.UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            reward = UCB1_stopping_['reward']
+            regret = UCB1_stopping_['regret']
+        elif alg == 'etc':
+            ETC_ = fA.ETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            reward = ETC_['reward']
+            regret = ETC_['regret']
     else:
-        if alg == 'ADAETC':
+        if alg == 'ada':
             m_ADAETC_ = fA.m_ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
             reward = m_ADAETC_['reward']
             regret = m_ADAETC_['regret']
-        elif alg == 'NADAETC':
+        elif alg == 'rada':
+            RADAETC_ = fA.RADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            reward = RADAETC_['reward']
+            regret = RADAETC_['regret']
+        elif alg == 'nada':
             m_NADAETC_ = fA.m_NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
             reward = m_NADAETC_['reward']
             regret = m_NADAETC_['regret']
+        elif alg == 'ucb1s':
+            m_UCB1_stopping_ = fA.m_UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            reward = m_UCB1_stopping_['reward']
+            regret = m_UCB1_stopping_['regret']
+        elif alg == 'etc':
+            m_ETC_ = fA.m_ETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            reward = m_ETC_['reward']
+            regret = m_ETC_['regret']
     return {'reward': reward,
             'regret': regret}
+
+
+def sample_K_T_streams(numStreams_, totalPeriods_, meanK_, meanT_, m_vals_, geom=False):
+    K_list_stream = {}
+    T_list_stream = {}
+    for st in range(numStreams_):
+        K_list_ = np.zeros(totalPeriods_)
+        T_list_ = np.zeros(totalPeriods_)
+        for s in range(totalPeriods_):
+            sampling_K = True
+            sample_K = 1e4
+            sampling_T = True
+            while sampling_K:
+                if geom:
+                    sample_K = np.random.geometric(1 / meanK_, 1)
+                else:
+                    sample_K = int(np.random.poisson(meanK_, 1))
+                if sample_K >= max(2, 2 * max(m_vals_) / totalPeriods_):
+                    K_list_[s] = sample_K
+                    sampling_K = False
+            while sampling_T:
+                if geom:
+                    sample_T = np.random.geometric(1 / meanT_, 1)
+                else:
+                    sample_T = int(np.random.poisson(meanT_, 1))
+                if sample_T > 5 * sample_K:
+                    T_list_[s] = sample_T
+                    sampling_T = False
+        K_list_stream[str(st)] = K_list_
+        T_list_stream[str(st)] = T_list_
+
+    return {'K_list_stream': K_list_stream, 'T_list_stream': T_list_stream}
 
 
 def init_res():

@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def generateArms(K_list, T_list, numArmDists, alpha, verbose=True):
     ncol = int(sum(K_list) * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
@@ -71,6 +70,43 @@ def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, v
     if verbose:
         print(armInstances[0])
     return armInstances
+
+
+def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, oneOptPerPeriod):
+    armInstances_ = {}  # need this in the output
+    if oneOptPerPeriod:
+        allArmInstances_ = generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
+                                           numArmDists=1, alpha=alpha__, verbose=False)
+        # get the top totalPeriods_-many arms, put them aside in top_m and shuffle the remaining arms
+        allArmInstances_ = np.sort(allArmInstances_[0])
+        top_m = allArmInstances_[-totalPeriods_:]
+        allArmInstances_ = allArmInstances_[:(int(sum(K_list_)) - totalPeriods_)]
+        np.random.shuffle(allArmInstances_)
+        col_s = 0
+        for p in range(totalPeriods_):
+            armInstances_[str(p)] = np.concatenate((top_m[p],
+                                                    allArmInstances_[col_s:(col_s + int(K_list_[p]) - 1)]),
+                                                   axis=None)
+            col_s += int(K_list_[p]) - 1
+    else:
+        col_s = 0
+        allArmInstances_ = np.zeros(int(sum(K_list_)))
+        for p in range(totalPeriods_):
+            armInstances_[str(p)] = generateArms(K_list=np.array([K_list_[p]]),
+                                                    T_list=np.array([T_list_[p]]), numArmDists=1,
+                                                    alpha=alpha__, verbose=False)
+            allArmInstances_[col_s:(col_s + int(K_list_[p]))] = np.array(armInstances_[str(p)])
+            col_s += int(K_list_[p])
+        allArmInstances_ = np.sort(allArmInstances_)
+        top_m = allArmInstances_[-totalPeriods_:]
+
+    # get the average reward of the top m arms in an instance, in this case m = totalPeriods_
+    best_top_m_avg_reward = np.mean(top_m)  # need this in the output
+    total_T = sum(T_list_) / totalPeriods_  # need this in the output
+
+    return {'armInstances': armInstances_,
+            'best_top_m_avg_reward': best_top_m_avg_reward,
+            'total_T': total_T}
 
 
 # this should be made more clear and concise, basically I should be able to fix one arm and generate others with a gap
