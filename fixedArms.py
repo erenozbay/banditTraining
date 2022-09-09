@@ -557,7 +557,7 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m):
             'standardError': stError}
 
 
-def NADAETC(armInstances, startSim, endSim, K_list, T_list):
+def NADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -643,21 +643,21 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
-
-    print("NADAETC results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Best Arm Rewards", end=" ")
-    print(reward)
-    print("Standard errors", end=" ")
-    print(stError)
-    print("Total Cumulative Rewards", end=" ")
-    print(cumreward)
-    print("Ratio of pulls spent on the most pulled arm to horizon T")
-    print(subOptRewards)
-    print()
+    if verbose:
+        print("NADAETC results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Standard errors", end=" ")
+        print(stError)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Ratio of pulls spent on the most pulled arm to horizon T")
+        print(subOptRewards)
+        print()
     return {'reward': reward,
             'cumreward': cumreward,
             'cumReg': cumReg,
@@ -667,7 +667,7 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list):
             'maxPulls': subOptRewards}
 
 
-def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m):
+def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -704,7 +704,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
                             pull += 1
                             if pull >= K:
@@ -718,7 +718,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
 
                     lcb_set = np.argsort(-indexlow)
@@ -745,17 +745,17 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m):
         reward[t] = np.mean(reward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
-
-    print(str(m) + "-NADAETC results:")
-    print("K: " + str(K) + ", and T: ", end=" ")
-    print(T_list)
-    print("Regrets", end=" ")
-    print(regret)
-    print("Best Arms Rewards", end=" ")
-    print(reward)
-    print("Standard errors", end=" ")
-    print(stError)
-    print()
+    if verbose:
+        print(str(m) + "-NADAETC results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Best Arms Rewards", end=" ")
+        print(reward)
+        print("Standard errors", end=" ")
+        print(stError)
+        print()
     return {'reward': reward,
             'regret': regret,
             'standardError': stError}
@@ -921,9 +921,9 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - \
-                                             2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                             1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
 
                     lcb_set = np.argsort(-indexlow)
                     lcb = lcb_set[m - 1]
