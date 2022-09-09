@@ -34,16 +34,8 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     T_list_stream = {}
     for st in range(numStreams_):
         res['stream_' + str(st)] = {'ada': {}, 'nada': {}, 'best': 0}
-        # res['stream_' + str(st)] = {}  # these should get keys for different algorithm after stream number
-        # res['stream_' + str(st)]['ada'] = {}
-        # res['stream_' + str(st)]['nada'] = {}
-        resreg['stream_' + str(st)] = {}  # these should get keys for different algorithm stream number
-        resreg['stream_' + str(st)]['ada'] = {}
-        resreg['stream_' + str(st)]['nada'] = {}
-        stdev['stream_' + str(st)] = {}  # these should get keys for different algorithm stream number
-        stdev['stream_' + str(st)]['ada'] = {}
-        stdev['stream_' + str(st)]['nada'] = {}
-        # res['stream_' + str(st)]['best'] = 0
+        resreg['stream_' + str(st)] = {'ada': {}, 'nada': {}}
+        stdev['stream_' + str(st)] = {'ada': {}, 'nada': {}}
         K_list_ = np.zeros(totalPeriods_)
         T_list_ = np.zeros(totalPeriods_)
         for s in range(totalPeriods_):
@@ -122,8 +114,10 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                 # these should get keys for different algorithm after stream number and before m
                 res['stream_' + str(st)]['ada']['m = ' + str(m_val)] = 0
                 resreg['stream_' + str(st)]['ada']['reg: m = ' + str(m_val)] = 0
+                res['stream_' + str(st)]['nada']['m = ' + str(m_val)] = 0
+                resreg['stream_' + str(st)]['nada']['reg: m = ' + str(m_val)] = 0
                 calls = int(totalPeriods_ / m_val)  # and this is 6 / 3 = 2, i.e., totalPeriods_ = 6
-                stdev_local = []
+                stdev_local = {'ada': [], 'nada': []}
                 for p in range(calls):  # so this will be 0, 1
                     indices = np.zeros(m_val)  # should look like 0, 1, 2;        3,  4,  5
                     for j in range(m_val):
@@ -146,16 +140,28 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                         col_start += int(K_list_[int(indices[j])])
                     # run the multiple simulations
                     for t in range(endSim_ - startSim_):
+                        # adaetc
                         run = sim_small_mid_large_m(arms_, np.array([K_vals_]), np.array([T_vals_]),
                                                     m_val, alg='ADAETC')
                         rew = run['reward'].item() / (calls * int(endSim_ - startSim_))
                         reg = run['regret'].item() / (calls * int(endSim_ - startSim_))
                         # .item() is used to get the value, not as array
-                        stdev_local.append(rew)
+                        stdev_local['ada'].append(rew)
                         res['stream_' + str(st)]['ada']['m = ' + str(m_val)] += rew
                         resreg['stream_' + str(st)]['ada']['reg: m = ' + str(m_val)] += reg
-                    stdev['stream_' + str(st)]['ada']['m = ' + str(m_val)] = np.sqrt(np.var(np.array(stdev_local)) /
-                                                                                     int(endSim_ - startSim_))
+                        # nadaetc
+                        run = sim_small_mid_large_m(arms_, np.array([K_vals_]), np.array([T_vals_]),
+                                                    m_val, alg='NADAETC')
+                        rew = run['reward'].item() / (calls * int(endSim_ - startSim_))
+                        reg = run['regret'].item() / (calls * int(endSim_ - startSim_))
+                        # .item() is used to get the value, not as array
+                        stdev_local['nada'].append(rew)
+                        res['stream_' + str(st)]['nada']['m = ' + str(m_val)] += rew
+                        resreg['stream_' + str(st)]['nada']['reg: m = ' + str(m_val)] += reg
+                    stdev['stream_' + str(st)]['ada']['m = ' + str(m_val)] = \
+                        np.sqrt(np.var(np.array(stdev_local['ada'])) / int(endSim_ - startSim_))
+                    stdev['stream_' + str(st)]['nada']['m = ' + str(m_val)] = \
+                        np.sqrt(np.var(np.array(stdev_local['nada'])) / int(endSim_ - startSim_))
 
             res['stream_' + str(st)]['best'] += total_T * best_top_m_avg_reward / numArmDists_
     # rewards = {}  # these should get keys for different algorithm
@@ -174,20 +180,30 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
         rewards['ada']['m = ' + str(m_val)] = 0
         stdevs['ada']['m = ' + str(m_val)] = 0
         regrets['ada']['reg: m = ' + str(m_val)] = 0
+        rewards['nada']['m = ' + str(m_val)] = 0
+        stdevs['nada']['m = ' + str(m_val)] = 0
+        regrets['nada']['reg: m = ' + str(m_val)] = 0
         for st in range(numStreams_):
             rewards['ada']['m = ' + str(m_vals_[j])] += res['stream_' + str(st)]['ada']['m = ' + str(m_val)] \
                                                         / numStreams_
             stdevs['ada']['m = ' + str(m_vals_[j])] += stdev['stream_' + str(st)]['ada']['m = ' + str(m_val)] \
                                                        / numStreams_
-            regrets['ada']['reg: m = ' + str(m_vals_[j])] += resreg['stream_' + str(st)]['ada']['reg: m = ' + str(m_val)] / numStreams_
+            regrets['ada']['reg: m = ' + str(m_vals_[j])] += \
+                resreg['stream_' + str(st)]['ada']['reg: m = ' + str(m_val)] / numStreams_
+            rewards['nada']['m = ' + str(m_vals_[j])] += res['stream_' + str(st)]['nada']['m = ' + str(m_val)] \
+                                                        / numStreams_
+            stdevs['nada']['m = ' + str(m_vals_[j])] += stdev['stream_' + str(st)]['nada']['m = ' + str(m_val)] \
+                                                       / numStreams_
+            regrets['nada']['reg: m = ' + str(m_vals_[j])] += \
+                resreg['stream_' + str(st)]['nada']['reg: m = ' + str(m_val)] / numStreams_
             if once:
                 best_rewards += res['stream_' + str(st)]['best']
                 once = False
 
-    print('ADA-ETC results')
     print("numArmDist", numArmDists_, "; alpha", alpha__, "; sims", endSim_ - startSim_,
           "; meanK", meanK_, "; meanT", meanT_, "; numStreams", numStreams_)
     print("One optimal arm per period?", oneOptPerPeriod, "; total periods", totalPeriods_)
+    print('ADA-ETC results')
     print('Rewards:')
     print('Best: ', best_rewards)
     for i in range(len(m_vals_)):
@@ -200,6 +216,21 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     print('Regrets')
     for i in range(len(m_vals_)):
         print("m =", str(m_vals_[i]), ": ", round(regrets['ada']['reg: m = ' + str(m_vals_[i])], 5))
+
+    print('--' * 20)
+    print('NADA-ETC results')
+    print('Rewards:')
+    print('Best: ', best_rewards)
+    for i in range(len(m_vals_)):
+        print("m =", str(m_vals_[i]), ": ", round(rewards['nada']['m = ' + str(m_vals_[i])], 5))
+    print()
+    print('Standard deviation of rewards')
+    for i in range(len(m_vals_)):
+        print("m =", str(m_vals_[i]), ": ", round(stdevs['nada']['m = ' + str(m_vals_[i])], 5))
+    print()
+    print('Regrets')
+    for i in range(len(m_vals_)):
+        print("m =", str(m_vals_[i]), ": ", round(regrets['nada']['reg: m = ' + str(m_vals_[i])], 5))
     print("Done after ", str(round(time.time() - start_, 2)), " seconds from start.")
     return {'result': res,
             'regret': resreg,

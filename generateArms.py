@@ -8,8 +8,6 @@ def generateArms(K_list, T_list, numArmDists, alpha, verbose=True):
     for i in range(numArmDists):
         armInstances[i, :] = np.random.uniform(alpha, 1 - alpha, ncol)
     if verbose:
-        print(armInstances)
-    else:
         print(armInstances[0])
     return armInstances
 
@@ -53,8 +51,6 @@ def generateArms_fixedDelta_old(K_list, T_list, numArmDists, alpha, numOpt, delt
         armInstances[i, :] = np.concatenate((np.random.uniform(alpha, 0.5, ncol - numOpt - 1),
                                              np.array([0.5]), np.ones(numOpt) * (0.5 + delta)))
     if verbose:
-        print(armInstances)
-    else:
         print(armInstances[0])
     return armInstances
 
@@ -73,8 +69,6 @@ def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, v
             armInstances[i, col:(col + K)] = arms
             col += K
     if verbose:
-        print(armInstances)
-    else:
         print(armInstances[0])
     return armInstances
 
