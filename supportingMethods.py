@@ -4,7 +4,7 @@ import fixedArms as fA
 
 
 # calls ADA-ETC or m-ADA=ETC depending on the m_ value, for the market simulation
-def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, alg):
+def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
     reward = -1e8
     regret = 1e8
     if m_ == 1:
@@ -13,11 +13,11 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, alg):
             reward = ADAETC_['reward']
             regret = ADAETC_['regret']
         elif alg == 'nada':
-            NADAETC_ = fA.NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            NADAETC_ = fA.NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
             reward = NADAETC_['reward']
             regret = NADAETC_['regret']
         elif alg == 'ucb1s':
-            UCB1_stopping_ = fA.UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            UCB1_stopping_ = fA.UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
             reward = UCB1_stopping_['reward']
             regret = UCB1_stopping_['regret']
         elif alg == 'etc':
@@ -34,11 +34,11 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, alg):
             reward = RADAETC_['reward']
             regret = RADAETC_['regret']
         elif alg == 'nada':
-            m_NADAETC_ = fA.m_NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            m_NADAETC_ = fA.m_NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
             reward = m_NADAETC_['reward']
             regret = m_NADAETC_['regret']
         elif alg == 'ucb1s':
-            m_UCB1_stopping_ = fA.m_UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            m_UCB1_stopping_ = fA.m_UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
             reward = m_UCB1_stopping_['reward']
             regret = m_UCB1_stopping_['regret']
         elif alg == 'etc':
@@ -180,6 +180,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
     constant_c = params_['c']
     delt_ = params_['delta']
     m_ = params_['m']
+    ucbPart_ = params_['ucbPart']
     plt.figure(figsize=(7, 5), dpi=100)
     plt.rc('axes', axisbelow=True)
     plt.grid()
@@ -194,10 +195,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.plot(T_list, ETC_['regret'], color='g', label='ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
                      color='g', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC')
+        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC (c=' + str(ucbPart_ * 2) + ')')
         plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
                      color='magenta', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s')
+        plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s (c=' + str(ucbPart_) + ')')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, SuccElim_['regret'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')

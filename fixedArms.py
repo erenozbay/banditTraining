@@ -557,7 +557,7 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
             'standardError': stError}
 
 
-def NADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
+def NADAETC(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -597,29 +597,27 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                        pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
-                                        # 2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
-
-                        indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
+                                          ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
+                        indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
                     else:
                         pull = np.argmax(indexhigh)
                         rew = np.random.binomial(1, arms[pull], 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                        pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
-                                        # 2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
-
-                        indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
+                                          ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
+                        indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
 
                     lcb = np.argmax(indexlow)
                     indexhigh_copy = indexhigh.copy()
                     indexhigh_copy[lcb] = -1
                     ucb = np.argmax(indexhigh_copy)
                     pull_arm = lcb
-                    if indexlow[lcb] > indexhigh[ucb]:
+                    if (indexlow[lcb] > indexhigh[ucb]) or ((indexlow[lcb] >= indexhigh[ucb]) and sum(pulls) > K):
                         break
                 cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
                 pulls[pull_arm] += int(T - sum(pulls))
@@ -667,7 +665,7 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
             'maxPulls': subOptRewards}
 
 
-def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
+def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -704,7 +702,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
                             pull += 1
                             if pull >= K:
@@ -718,7 +716,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
 
                     lcb_set = np.argsort(-indexlow)
@@ -761,7 +759,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
             'standardError': stError}
 
 
-def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, verbose=True):
+def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -801,27 +799,29 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, verbose=True):
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                        pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
+                                          ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
                         indexlow[pull] = empirical_mean[pull] - \
-                                         1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
+                                         ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
                     else:
                         pull = np.argmax(indexhigh)
                         rew = np.random.binomial(1, arms[pull], 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                        pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
-                                          1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
+                                          ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
                         indexlow[pull] = empirical_mean[pull] - \
-                                         1 * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * (pullEach > pulls[pull])
+                                         ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
 
                     lcb = np.argmax(indexlow)
                     indexhigh_copy = indexhigh.copy()
                     indexhigh_copy[lcb] = -1
                     ucb = np.argmax(indexhigh_copy)
                     pull_arm = lcb
-                    if indexlow[lcb] > indexhigh[ucb]:
+                    if (indexlow[lcb] > indexhigh[ucb]) or ((indexlow[lcb] >= indexhigh[ucb]) and sum(pulls) > K):
                         break
                 cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
                 pulls[pull_arm] += int(T - sum(pulls))
@@ -869,7 +869,7 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, verbose=True):
             'standardError': stError}
 
 
-def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
+def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -906,9 +906,9 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, verbose=T
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - \
-                                             2 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                             ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             pull += 1
                             if pull >= K:
                                 break
@@ -921,9 +921,9 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, verbose=T
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - \
-                                             1 * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                             ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
 
                     lcb_set = np.argsort(-indexlow)
                     lcb = lcb_set[m - 1]
