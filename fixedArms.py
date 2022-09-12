@@ -450,7 +450,7 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
                     indexhigh_copy[lcb_set[0:m]] = -1  # make sure that correct arms are excluded from max UCB step
                     ucb = np.argsort(-indexhigh_copy)[0]
                     pullset = lcb_set[0:m]
-                    if indexlow[lcb] > indexhigh[ucb]:
+                    if (indexlow[lcb] > indexhigh[ucb]) or ((indexlow[lcb] >= indexhigh[ucb]) and sum(pulls) > K):
                         stopped = i + 1
                         break
 
@@ -701,9 +701,10 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verb
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                            pullBool = pullEach > pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
-                            indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * pullBool
+                            indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
                             pull += 1
                             if pull >= K:
                                 break
@@ -715,9 +716,10 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verb
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                            pullBool = pullEach > pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
-                            indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * pullBool
+                            indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
 
                     lcb_set = np.argsort(-indexlow)
                     lcb = lcb_set[m - 1]
@@ -725,7 +727,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verb
                     indexhigh_copy[lcb_set[0:m]] = -1  # make sure that correct arms are excluded from max UCB step
                     ucb = np.argsort(-indexhigh_copy)[0]
                     pullset = lcb_set[0:m]
-                    if indexlow[lcb] > indexhigh[ucb]:
+                    if (indexlow[lcb] > indexhigh[ucb]) or ((indexlow[lcb] >= indexhigh[ucb]) and sum(pulls) > K):
                         stopped = i + 1
                         break
 
@@ -759,7 +761,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verb
             'standardError': stError}
 
 
-def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, verbose=True):
+def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, orig=False, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -802,8 +804,9 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, ver
                         pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
                                           ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
+                        lowBool = (not orig) or pullBool
                         indexlow[pull] = empirical_mean[pull] - \
-                                         ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
+                                         ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * lowBool
                     else:
                         pull = np.argmax(indexhigh)
                         rew = np.random.binomial(1, arms[pull], 1)
@@ -813,8 +816,9 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, ver
                         pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
                                           ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
+                        lowBool = (not orig) or pullBool
                         indexlow[pull] = empirical_mean[pull] - \
-                                         ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
+                                         ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * lowBool
 
                     lcb = np.argmax(indexlow)
                     indexhigh_copy = indexhigh.copy()
@@ -869,7 +873,7 @@ def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, ver
             'standardError': stError}
 
 
-def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verbose=True):
+def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, orig=False, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -905,10 +909,12 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                            pullBool = pullEach > pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * pullBool
+                            lowBool = (not orig) or pullBool
                             indexlow[pull] = empirical_mean[pull] - \
-                                             ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                             ucbPart * np.sqrt(np.log(T) / pulls[pull]) * lowBool
                             pull += 1
                             if pull >= K:
                                 break
@@ -920,10 +926,12 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+                            pullBool = pullEach > pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * pullBool
+                            lowBool = (not orig) or pullBool
                             indexlow[pull] = empirical_mean[pull] - \
-                                             ucbPart * np.sqrt(np.log(T) / pulls[pull]) * (pullEach > pulls[pull])
+                                             ucbPart * np.sqrt(np.log(T) / pulls[pull]) * lowBool
 
                     lcb_set = np.argsort(-indexlow)
                     lcb = lcb_set[m - 1]
@@ -931,7 +939,7 @@ def m_UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2
                     indexhigh_copy[lcb_set[0:m]] = -1  # make sure that correct arms are excluded from max UCB step
                     ucb = np.argsort(-indexhigh_copy)[0]
                     pullset = lcb_set[0:m]
-                    if indexlow[lcb] > indexhigh[ucb]:
+                    if (indexlow[lcb] > indexhigh[ucb]) or ((indexlow[lcb] >= indexhigh[ucb]) and sum(pulls) > K):
                         stopped = i + 1
                         break
 

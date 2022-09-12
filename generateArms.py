@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def generateArms(K_list, T_list, numArmDists, alpha, verbose=True):
     ncol = int(sum(K_list) * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
@@ -76,7 +77,7 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, oneOptPerPe
     armInstances_ = {}  # need this in the output
     if oneOptPerPeriod:
         allArmInstances_ = generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
-                                           numArmDists=1, alpha=alpha__, verbose=False)
+                                        numArmDists=1, alpha=alpha__, verbose=False)
         # get the top totalPeriods_-many arms, put them aside in top_m and shuffle the remaining arms
         allArmInstances_ = np.sort(allArmInstances_[0])
         top_m = allArmInstances_[-totalPeriods_:]
@@ -93,8 +94,8 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, oneOptPerPe
         allArmInstances_ = np.zeros(int(sum(K_list_)))
         for p in range(totalPeriods_):
             armInstances_[str(p)] = generateArms(K_list=np.array([K_list_[p]]),
-                                                    T_list=np.array([T_list_[p]]), numArmDists=1,
-                                                    alpha=alpha__, verbose=False)
+                                                 T_list=np.array([T_list_[p]]), numArmDists=1,
+                                                 alpha=alpha__, verbose=False)
             allArmInstances_[col_s:(col_s + int(K_list_[p]))] = np.array(armInstances_[str(p)])
             col_s += int(K_list_[p])
         allArmInstances_ = np.sort(allArmInstances_)

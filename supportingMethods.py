@@ -17,7 +17,8 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
             reward = NADAETC_['reward']
             regret = NADAETC_['regret']
         elif alg == 'ucb1s':
-            UCB1_stopping_ = fA.UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
+            UCB1_stopping_ = fA.UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, ucbPart_,
+                                              orig=True, verbose=False)
             reward = UCB1_stopping_['reward']
             regret = UCB1_stopping_['regret']
         elif alg == 'etc':
@@ -38,7 +39,8 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
             reward = m_NADAETC_['reward']
             regret = m_NADAETC_['regret']
         elif alg == 'ucb1s':
-            m_UCB1_stopping_ = fA.m_UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
+            m_UCB1_stopping_ = fA.m_UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, ucbPart_,
+                                                  orig=True, verbose=False)
             reward = m_UCB1_stopping_['reward']
             regret = m_UCB1_stopping_['regret']
         elif alg == 'etc':
@@ -195,7 +197,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.plot(T_list, ETC_['regret'], color='g', label='ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
                      color='g', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC (c=' + str(ucbPart_ * 2) + ')')
+        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC (c=' + str(ucbPart_) + ')')
         plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
                      color='magenta', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s (c=' + str(ucbPart_) + ')')
@@ -217,7 +219,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='m-UCB1-s')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, SuccElim_['regret'], color='blue', label='RADA-ETC')  # THIS IS RADA-ETC
+        plt.plot(T_list, SuccElim_['regret'], color='blue', label='RADA-ETC')  # THIS IS RADA-ETC for this part
         plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
                      color='blue', fmt='o', markersize=4, capsize=4)
 
