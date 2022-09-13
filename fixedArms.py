@@ -761,7 +761,7 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verb
             'standardError': stError}
 
 
-def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, orig=False, verbose=True):
+def UCB1_stopping(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, orig=True, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)

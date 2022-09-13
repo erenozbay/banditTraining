@@ -21,6 +21,10 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
                                               orig=True, verbose=False)
             reward = UCB1_stopping_['reward']
             regret = UCB1_stopping_['regret']
+        # elif alg == 'ucb1':
+        #     naiveUCB1_ = fA.naiveUCB1(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+        #     reward = naiveUCB1_['reward']
+        #     regret = naiveUCB1_['regret']
         elif alg == 'etc':
             ETC_ = fA.ETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
             reward = ETC_['reward']
@@ -167,9 +171,14 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
 
     plt.legend(loc="upper left")
     # plt.legend(loc="upper right") if title == 'Regret' else plt.legend(loc="upper left")
-    plt.savefig('res/' + str(K_) + 'arms_halfHalfDelta_' + str(numOpt__) + 'optArms_' + title + '_' + str(numSim) +
-                'sims_T' + str(T_) + '_' + str(generateIns__) + 'inst_' + str(alp) + 'alpha_UCB' +
-                str(UCBin_) + '.eps', format='eps', bbox_inches='tight')
+    if K_ == 2:
+        plt.savefig('res/' + str(K_) + 'arms_halfHalfDelta_' + str(numOpt__) + 'optArms_' + title + '_' + str(numSim) +
+                    'sims_T' + str(T_) + '_' + str(generateIns__) + 'inst_UCB' + str(UCBin_) + '.eps',
+                    format='eps', bbox_inches='tight')
+    else:
+        plt.savefig('res/' + str(K_) + 'arms_halfHalfDelta_' + str(numOpt__) + 'optArms_' + title + '_' + str(numSim) +
+                    'sims_T' + str(T_) + '_' + str(generateIns__) + 'inst_' + str(alp) + 'alpha_UCB' +
+                    str(UCBin_) + '.eps', format='eps', bbox_inches='tight')
     # plt.show()
     plt.cla()
 
@@ -197,10 +206,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.plot(T_list, ETC_['regret'], color='g', label='ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
                      color='g', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC (c=' + str(ucbPart_) + ')')
+        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC')
         plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
                      color='magenta', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s (c=' + str(ucbPart_) + ')')
+        plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, SuccElim_['regret'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
@@ -222,10 +231,29 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.plot(T_list, SuccElim_['regret'], color='blue', label='RADA-ETC')  # THIS IS RADA-ETC for this part
         plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
                      color='blue', fmt='o', markersize=4, capsize=4)
+    if i == 3:
+        plt.plot(T_list, naiveUCB1_['cumReg'], color='b', label='UCB1')
+        plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError'],
+                     color='b', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, ADAETC_['cumReg'], color='r', label='ADA-ETC')
+        plt.errorbar(T_list, ADAETC_['cumReg'], yerr=ADAETC_['standardError'],
+                     color='r', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, ETC_['cumReg'], color='g', label='ETC')
+        plt.errorbar(T_list, ETC_['cumReg'], yerr=ETC_['standardError'],
+                     color='g', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, NADAETC_['cumReg'], color='magenta', label='NADA-ETC (c=' + str(ucbPart_) + ')')
+        plt.errorbar(T_list, NADAETC_['cumReg'], yerr=NADAETC_['standardError'],
+                     color='magenta', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, UCB1_stopping_['cumReg'], color='navy', label='UCB1-s (c=' + str(ucbPart_) + ')')
+        plt.errorbar(T_list, UCB1_stopping_['cumReg'], yerr=UCB1_stopping_['standardError'],
+                     color='navy', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, SuccElim_['cumReg'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
+        plt.errorbar(T_list, SuccElim_['cumReg'], yerr=SuccElim_['standardError'],
+                     color='purple', fmt='o', markersize=4, capsize=4)
 
     plt.xticks(T_list)
     # plt.ylim(ymax=30)
-    plt.ylabel('Regret', fontsize=15)
+    plt.ylabel('Regret', fontsize=15) if i != 3 else plt.ylabel('Cumulative Regret', fontsize=15)
     plt.xlabel('T', fontsize=15)
 
     plt.legend(loc="upper left")
@@ -241,5 +269,9 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.savefig('res/mEquals' + str(m_) + '_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' +
                     str(alpha__) + '_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '_delta' + str(delt_) +
                     '.eps', format='eps', bbox_inches='tight')
+    elif i == 3:  # m = 1, sum objective
+        plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
+                    '_sumObj_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '_c' +
+                    str(constant_c) + '_delta' + str(delt_) + '.eps', format='eps', bbox_inches='tight')
     # plt.show()
     plt.cla()

@@ -39,6 +39,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     sampleStreams = sample_K_T_streams(numStreams_, totalPeriods_, meanK_, meanT_, m_vals_, geom=False)
     K_list_stream = sampleStreams['K_list_stream']
     T_list_stream = sampleStreams['T_list_stream']
+    print("GO")
 
     # run the simulation for each (K, T)-pair
     # fix (K, T) and following it, fix an instance with the correct number of arms, following the period-based K values
@@ -156,32 +157,6 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
             print("m =", str(m_vals_[i]), ": ", round(regrets[keys]['reg: m = ' + str(m_vals_[i])], 5))
     print("UCB part for NADA-ETC " + str(ucbPart_) + ", and UCB1-s is " + str(ucbPart_))
     print("Done after ", str(round(time.time() - start_, 2)), " seconds from start.")
-    Qs = np.zeros(6)
-    Ts = np.zeros(6)
-    for i in range(totalPeriods_):
-        print("Arrivals in period " + str(i + 1) + " is " + str(int(K_list_[i])) + "; jobs " + str(int(T_list_[i])))
-        if i < totalPeriods_ / 6:
-            Qs[0] += K_list_[i]
-            Ts[0] += T_list_[i]
-        elif i < totalPeriods_ / 3:
-            Qs[1] += K_list_[i]
-            Ts[1] += T_list_[i]
-        elif i < totalPeriods_ / 2:
-            Qs[2] += K_list_[i]
-            Ts[2] += T_list_[i]
-        elif i < 2 * totalPeriods_ / 3:
-            Qs[3] += K_list_[i]
-            Ts[3] += T_list_[i]
-        elif i < 5 * totalPeriods_ / 6:
-            Qs[4] += K_list_[i]
-            Ts[4] += T_list_[i]
-        else:
-            Qs[5] += K_list_[i]
-            Ts[5] += T_list_[i]
-    print("one-sixth arrivals ")
-    print(Qs)
-    print("one-sixth jobs ")
-    print(Ts)
 
     return {'result': res,
             'regret': resreg,
@@ -249,29 +224,44 @@ def mEqOne_barPlots(K_list_, T_list_, startSim_, endSim_, alpha__, ucbPart_, num
             'fullRes': res}
 
 
-def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, ucbPart_, numOpt_, delt_):
+def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, ucbPart_, numOpt_, delt_,
+           plots=True, fixed = 'no'):
     print("Running m = 1")
     constant_c = 4
     start_ = time.time()
-    if numOpt_ == 1:
-        armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__, verbose=True)
+    if fixed == 'Gap':
+        armInstances_ = gA.generateArms_fixedGap(K_list, T_list, numArmDists_, verbose=True)
+        print("Fixed gaps")
+    elif fixed == 'Intervals':
+        armInstances_ = gA.generateArms_fixedIntervals(K_list, T_list, numArmDists_, verbose=True)
+        print("Fixed intervals")
     else:
-        armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, numArmDists_, alpha__,
-                                                   numOpt_, delt_, verbose=True)
+        if numOpt_ == 1 and delt_ == 0:
+            armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__, verbose=True)
+            print("Single optimal arm with random gap")
+        else:
+            armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, numArmDists_, alpha__,
+                                                       numOpt_, delt_, verbose=True)
+            if numOpt_ == 1:
+                print("Single optimal arm with gap " + str(delt_))
+            else:
+                print(str(numOpt_) + " opt arms, gap " + str(delt_))
 
     naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_)
     ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_)
     ETC_ = fA.ETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
     NADAETC_ = fA.NADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_, ucbPart_)
-    UCB1_stopping_ = fA.UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_, ucbPart_)
+    UCB1_stopping_ = fA.UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_, ucbPart_, orig=True)
     SuccElim_ = fA.SuccElim(armInstances_, startSim_, endSim_, K_list_, T_list_, constant_c)
 
     print("took " + str(time.time() - start_) + " seconds")
 
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_ - startSim_,
                'numArmDists': numArmDists_, 'c': constant_c, 'delta': delt_, 'm': 1, 'ucbPart': ucbPart_}
-    for i in range(2):
-        plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_, params_)
+    if plots:
+        for i in range(2):
+            plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_, params_)
+        plot_fixed_m(3, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_, params_)
     print("UCB part for NADA-ETC " + str(ucbPart_) + ", and UCB1-s is " + str(ucbPart_))
     return {'UCB1': naiveUCB1_,
             'ADAETC': ADAETC_,
@@ -295,7 +285,7 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, uc
     m_ADAETC_ = fA.m_ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_, m_)
     m_ETC_ = fA.m_ETC(armInstances_, startSim_, endSim_, K_list_, T_list_, m_)
     m_NADAETC_ = fA.m_NADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_, m_, ucbPart_)
-    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_, m_, ucbPart_)
+    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_, m_, ucbPart_, orig=True)
     print("took " + str(time.time() - start_) + " seconds")
 
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_ - startSim_,
@@ -311,32 +301,37 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, uc
 
 
 if __name__ == '__main__':
-    K_list = np.array([2])
+    K_list = np.array([5])
     # varyingK = True if len(K_list) > 1 else False
-    T_list = np.arange(1, 2) * 1000  # np.array([100])  # np.array([100])  #
+    T_list = np.arange(10, 21) * 1000  # np.array([100])  # np.array([100])  #
     m = 2
-    numArmDists = 20
-    alpha_ = 0.4  # can be used for both
+    numArmDists = 25
+    alpha_ = 0  # can be used for both
     ucbPart = 2
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 20
+    endSim = 25
     pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
     # larger pw means closer mean rewards in the arm instances generated
 
     # market-like simulation
-    meanK = 10  # we will have totalPeriods-many streams, so mean can be set based on that
-    meanT = 200
-    numStreams = 1  # number of different K & T streams in total
-    totalPeriods = 120
-    m_vals = np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30, 40, 60, 120])
-    market = marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals,
-                       alpha_, startSim, endSim, ucbPart_=ucbPart, oneOptPerPeriod=False)
+    # meanK = 3  # we will have totalPeriods-many streams, so mean can be set based on that
+    # meanT = 200
+    # numStreams = 1  # number of different K & T streams in total
+    # totalPeriods = 72
+    # m_vals = np.array([1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72])
+        # np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30, 40, 60, 120])
+    # market = marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals,
+    #                    alpha_, startSim, endSim, ucbPart_=ucbPart, oneOptPerPeriod=False)
     # exit()
 
     # fixed mean rewards throughout, m = 1
-    # result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, ucbPart_=ucbPart, numOpt_=1, delt_=0.1)
-    # exit()
+    # for j in range(5):
+    #     result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_,
+    #                     ucbPart_=ucbPart, numOpt_=1, delt_=round(0.1 * (j + 1), 1), plots=True, fixedGap=False)
+    result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_,
+                    ucbPart_=ucbPart, numOpt_=1, delt_=0, plots=True, fixed='Intervals')  # 'Gap'
+    exit()
 
     # fixed mean rewards throughout, m > 1
     # mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, ucbPart_=ucbPart, numOpt_=3, delt_=0.3)
@@ -344,8 +339,8 @@ if __name__ == '__main__':
 
     # fixed means but difference is specified between two best arms, varying difference between means, m = 1
     # mEqOne_barPlots(K_list, T_list, startSim, endSim, alpha_, ucbPart_=ucbPart,
-    #                 numOpt_=1, generateIns_=numArmDists, rng=11)
-    # exit()
+    #                 numOpt_=2, generateIns_=numArmDists, rng=11)
+    exit()
     # generateIns_ takes the place of running with multiple arm instances
     # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
     # change numOpt to >1 to generate K - numOpt - 1 random arms in uniform(0, 0.5), one at exactly 0.5,
