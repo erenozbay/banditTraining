@@ -12,7 +12,7 @@ from copy import deepcopy
 
 # totalPeriods_ should be divisible by all values in m_vals, e.g., 12 periods, m_vals = [1, 2, 3, 6]
 def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
-              alpha__, startSim_, endSim_, ucbPart_=2, oneOptPerPeriod=False):
+              alpha__, startSim_, endSim_, ucbPart_=2, numOptPerPeriod='none'):
     start_ = time.time()
     res = {}  # used to store the reward for each (K, T)-pair stream and algorithm
     resreg = {}  # used to store the regret for each (K, T)-pair stream and algorithm
@@ -57,7 +57,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                       str(time.time() - start_), " from start.")
 
             # generate arm means, either each period has one optimal arm (across all periods) or no such arrangement
-            armsInfo = gA.generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, oneOptPerPeriod)
+            armsInfo = gA.generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPeriod)
             armInstances_ = armsInfo['armInstances']
             best_top_m_avg_reward = armsInfo['best_top_m_avg_reward']
             total_T = armsInfo['total_T']
@@ -139,7 +139,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     # printing results for each algorithm
     print("numArmDist", numArmDists_, "; alpha", alpha__, "; sims", endSim_ - startSim_,
           "; meanK", meanK_, "; meanT", meanT_, "; numStreams", numStreams_)
-    print("One optimal arm per period?", oneOptPerPeriod, "; total periods", totalPeriods_)
+    print("How many optimal arm(s) per period?", numOptPerPeriod, "; total periods", totalPeriods_)
     for keys in algs.keys():
         print('--' * 20)
         print(keys + ' results ')
@@ -225,15 +225,15 @@ def mEqOne_barPlots(K_list_, T_list_, startSim_, endSim_, alpha__, ucbPart_, num
 
 
 def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, ucbPart_, numOpt_, delt_,
-           plots=True, fixed = 'no'):
+           plots=True, fixed='whatever'):
     print("Running m = 1")
     constant_c = 4
     start_ = time.time()
     if fixed == 'Gap':
-        armInstances_ = gA.generateArms_fixedGap(K_list, T_list, numArmDists_, verbose=True)
+        armInstances_ = gA.generateArms_fixedGap(K_list, T_list, numArmDists_, verbose=True)  # deterministic
         print("Fixed gaps")
     elif fixed == 'Intervals':
-        armInstances_ = gA.generateArms_fixedIntervals(K_list, T_list, numArmDists_, verbose=True)
+        armInstances_ = gA.generateArms_fixedIntervals(K_list, T_list, numArmDists_, verbose=True)  # randomized
         print("Fixed intervals")
     else:
         if numOpt_ == 1 and delt_ == 0:
@@ -247,12 +247,12 @@ def mEqOne(K_list_, T_list_, numArmDists_, startSim_, endSim_, alpha__, ucbPart_
             else:
                 print(str(numOpt_) + " opt arms, gap " + str(delt_))
 
-    naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_)
     ADAETC_ = fA.ADAETC(armInstances_, startSim_, endSim, K_list_, T_list_)
     ETC_ = fA.ETC(armInstances_, startSim_, endSim_, K_list_, T_list_)
     NADAETC_ = fA.NADAETC(armInstances_, startSim_, endSim_, K_list_, T_list_, ucbPart_)
     UCB1_stopping_ = fA.UCB1_stopping(armInstances_, startSim_, endSim_, K_list_, T_list_, ucbPart_, orig=True)
     SuccElim_ = fA.SuccElim(armInstances_, startSim_, endSim_, K_list_, T_list_, constant_c)
+    naiveUCB1_ = fA.naiveUCB1(armInstances_, startSim_, endSim_, K_list_, T_list_)
 
     print("took " + str(time.time() - start_) + " seconds")
 
@@ -301,16 +301,16 @@ def mGeneral(K_list_, T_list_, numArmDists_, startSim_, endSim_, m_, alpha__, uc
 
 
 if __name__ == '__main__':
-    K_list = np.array([5])
+    K_list = np.array([2])
     # varyingK = True if len(K_list) > 1 else False
-    T_list = np.arange(10, 21) * 1000  # np.array([100])  # np.array([100])  #
+    T_list = np.array([5000])  # np.arange(1, 11) * 1000  # np.array([100])  #
     m = 2
-    numArmDists = 25
+    numArmDists = 1
     alpha_ = 0  # can be used for both
     ucbPart = 2
     # beta_ = 0.01  # for rotting bandits
     startSim = 0
-    endSim = 25
+    endSim = 2000
     pw = 1 / 2  # used for both, larger pw means higher variance in mean changes for rotting
     # larger pw means closer mean rewards in the arm instances generated
 
@@ -322,24 +322,24 @@ if __name__ == '__main__':
     # m_vals = np.array([1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72])
         # np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30, 40, 60, 120])
     # market = marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals,
-    #                    alpha_, startSim, endSim, ucbPart_=ucbPart, oneOptPerPeriod=False)
+    #                    alpha_, startSim, endSim, ucbPart_=ucbPart, numOptPerPeriod='none')  # or 'one' or any number
     # exit()
 
     # fixed mean rewards throughout, m = 1
     # for j in range(5):
     #     result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_,
     #                     ucbPart_=ucbPart, numOpt_=1, delt_=round(0.1 * (j + 1), 1), plots=True, fixedGap=False)
-    result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_,
-                    ucbPart_=ucbPart, numOpt_=1, delt_=0, plots=True, fixed='Intervals')  # 'Gap'
-    exit()
+    # result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_, ucbPart_=ucbPart,
+    #                 numOpt_=1, delt_=0, plots=True, fixed='Intervals')  # fixed='Intervals' or 'Gap' or anything else
+    # exit()
 
     # fixed mean rewards throughout, m > 1
     # mGeneral(K_list, T_list, numArmDists, startSim, endSim, m, alpha_, ucbPart_=ucbPart, numOpt_=3, delt_=0.3)
     # exit()
 
     # fixed means but difference is specified between two best arms, varying difference between means, m = 1
-    # mEqOne_barPlots(K_list, T_list, startSim, endSim, alpha_, ucbPart_=ucbPart,
-    #                 numOpt_=2, generateIns_=numArmDists, rng=11)
+    mEqOne_barPlots(K_list, T_list, startSim, endSim, alpha_, ucbPart_=ucbPart,
+                    numOpt_=1, generateIns_=numArmDists, rng=11)
     exit()
     # generateIns_ takes the place of running with multiple arm instances
     # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
