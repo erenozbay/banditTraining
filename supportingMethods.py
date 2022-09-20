@@ -21,10 +21,10 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
                                               orig=True, verbose=False)
             reward = UCB1_stopping_['reward']
             regret = UCB1_stopping_['regret']
-        # elif alg == 'ucb1':
-        #     naiveUCB1_ = fA.naiveUCB1(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
-        #     reward = naiveUCB1_['reward']
-        #     regret = naiveUCB1_['regret']
+        elif alg == 'ucb1':
+            naiveUCB1_ = fA.naiveUCB1(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            reward = naiveUCB1_['reward']
+            regret = naiveUCB1_['regret']
         elif alg == 'etc':
             ETC_ = fA.ETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
             reward = ETC_['reward']
@@ -47,6 +47,10 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
                                                   orig=True, verbose=False)
             reward = m_UCB1_stopping_['reward']
             regret = m_UCB1_stopping_['regret']
+        elif alg == 'ucb1':
+            m_naiveUCB1_ = fA.m_naiveUCB1(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            reward = m_naiveUCB1_['reward']
+            regret = m_naiveUCB1_['regret']
         elif alg == 'etc':
             m_ETC_ = fA.m_ETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
             reward = m_ETC_['reward']
@@ -124,8 +128,8 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
     succ_elim = res_['SuccElim']
     succ_elim6 = res_['SuccElim6']
 
-    length = len(naive_ucb1[title]) if title != 'cumReg' else len(naive_ucb1[title]) - 1
-    bar1 = np.arange(length)
+    length = len(adaetc[title]) if title != 'cumReg' else len(adaetc[title]) - 1
+    bar1 = np.arange(length) if title != 'cumReg' else np.arange(length) + 0.15
     bar2 = [x + bw for x in bar1]
     bar3 = [x + bw for x in bar2]
     bar4 = [x + bw for x in bar3]
@@ -155,16 +159,12 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
     chartTitle = ''
     if title == 'cumrew':
         chartTitle = 'Cumulative Reward'
-        # plt.ylim(ymax=70)
     if title == 'cumReg':
         chartTitle = 'Sum Objective Regret'
-        # plt.ylim(ymax=70)
     elif title == 'Reward':
         chartTitle = 'Best Arm Reward'
-        # plt.ylim(ymax=40)
     elif title == 'Regret':
         chartTitle = 'Max Objective Regret'
-        # plt.ylim(ymax=92)
     plt.ylabel(chartTitle, fontsize=15)
     plt.xlabel(r'$\Delta$', fontweight='bold', fontsize=15)
     plt.xticks([x + bw for x in bar1], delt_[-length:])
@@ -252,7 +252,6 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
                      color='purple', fmt='o', markersize=4, capsize=4)
 
     plt.xticks(T_list)
-    # plt.ylim(ymax=30)
     plt.ylabel('Regret', fontsize=15) if i != 3 else plt.ylabel('Cumulative Regret', fontsize=15)
     plt.xlabel('T', fontsize=15)
 
