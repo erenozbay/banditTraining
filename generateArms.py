@@ -26,35 +26,6 @@ def generateRottingArms(K, T_list, numArmDists, alpha, beta):
     return armInstances
 
 
-def generateTwoArms(T_list, numArmDists, delta):
-    ncol = int(2 * len(T_list))
-    armInstances = np.zeros((numArmDists, ncol))
-
-    for i in range(numArmDists):
-        arms = np.zeros(ncol)
-        for j in range(len(T_list)):
-            first = 0.5
-            second = 0.5 + delta
-            arms[j * 2] = first
-            arms[j * 2 + 1] = second
-        armInstances[i, :] = arms
-
-    print(armInstances[0])
-    return armInstances
-
-
-def generateArms_fixedDelta_old(K_list, T_list, numArmDists, alpha, numOpt, delta, verbose=True):
-    ncol = int(sum(K_list) * len(T_list))
-    armInstances = np.zeros((numArmDists, ncol))
-
-    for i in range(numArmDists):
-        armInstances[i, :] = np.concatenate((np.random.uniform(alpha, 0.5, ncol - numOpt - 1),
-                                             np.array([0.5]), np.ones(numOpt) * (0.5 + delta)))
-    if verbose:
-        print(armInstances[0])
-    return armInstances
-
-
 def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, verbose=True):
     ncol = int(sum(K_list) * len(T_list))
     armInstances = np.zeros((numArmDists, ncol))
@@ -66,7 +37,8 @@ def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, v
             if K - numOpt - 1 >= 0:
                 arms = np.concatenate((np.random.uniform(alpha, 0.5, K - numOpt - 1),
                                        np.array([0.5]), np.ones(numOpt) * (0.5 + delta)))
-                # np.random.shuffle(arms)
+                if K > 2:
+                    np.random.shuffle(arms)  # not shuffling if there are two arms, for specific experiments
             else:
                 arms = np.ones(numOpt) * (0.5 + delta)
             armInstances[i, col:(col + K)] = arms
@@ -115,7 +87,8 @@ def generateArms_fixedIntervals(K_list, T_list, numArmDists, verbose=True):
 
 
 def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPeriod):
-    armInstances_ = {}  # need this in the output
+    armInstances_ = {}
+
     if numOptPerPeriod == 'one':
         allArmInstances_ = generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
                                         numArmDists=1, alpha=alpha__, verbose=False)
@@ -146,7 +119,7 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPe
         num = numOptPerPeriod
         allArmInstances_ = generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
                                         numArmDists=1, alpha=alpha__, verbose=False)
-        # get the top totalPeriods_-many arms, put them aside in top_m and shuffle the remaining arms
+        # get the top (totalPeriods_ * numOptPerPeriod)-many arms, put them aside and shuffle the remaining arms
         allArmInstances_ = np.sort(allArmInstances_[0])
         top_m = allArmInstances_[-totalPeriods_:]
         top_numOpt = allArmInstances_[-int(num * totalPeriods_):]
@@ -161,56 +134,9 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPe
             col_s += int(K_list_[p]) - 1
 
     # get the average reward of the top m arms in an instance, in this case m = totalPeriods_
-    best_top_m_avg_reward = np.mean(top_m)  # need this in the output
-    total_T = sum(T_list_) / totalPeriods_  # need this in the output
+    best_top_m_avg_reward = np.mean(top_m)
+    total_T = sum(T_list_) / totalPeriods_
 
     return {'armInstances': armInstances_,
             'best_top_m_avg_reward': best_top_m_avg_reward,
             'total_T': total_T}
-
-
-# this should be made more clear and concise, basically I should be able to fix one arm and generate others with a gap
-def generateMultipleArms(K_list, T_list, numArmDists, pw=1 / 3):
-    ncol = int(sum(K_list) * len(T_list))
-    armInstances = np.zeros((numArmDists, ncol))
-
-    if numArmDists > 1:
-        for i in range(numArmDists):
-            arms_T = np.zeros(ncol)
-            for t in range(len(T_list)):
-                arms = np.zeros(sum(K_list))
-                for j in range(len(K_list)):
-                    K = K_list[j]
-                    within = min(0.5, 1 / np.power(T_list[t], pw))
-                    sub_arms = np.random.uniform(0.5 - within, 0.5 + within, K - 1)
-                    opt_arm = max(sub_arms) + within
-                    if opt_arm > 1:
-                        opt_arm = 1
-                        sub_arms = sub_arms / opt_arm
-                    range_first = 0 if j == 0 else sum(K_list[0:j])
-                    range_last = range_first + K - 1
-                    arms[range_first:range_last] = sub_arms
-                    arms[range_last] = opt_arm
-                arms_T[(t * sum(K_list)):((t + 1) * sum(K_list))] = arms
-            armInstances[i, :] = arms_T
-    else:
-        arms_T = np.zeros(ncol)
-        for t in range(len(T_list)):
-            arms = np.zeros(sum(K_list))
-            for j in range(len(K_list)):
-                K = K_list[j]
-                within = min(0.5, 1 / np.power(T_list[t], pw))
-                sub_arms = np.random.uniform(0.5 - within, 0.5 + within, K - 1)
-                opt_arm = max(sub_arms) + within
-                if opt_arm > 1:
-                    opt_arm = 1
-                    sub_arms = sub_arms / opt_arm
-                range_first = 0 if j == 0 else sum(K_list[0:j])
-                range_last = range_first + K - 1
-                arms[range_first:range_last] = sub_arms
-                arms[range_last] = opt_arm
-            arms_T[(t * sum(K_list)):((t + 1) * sum(K_list))] = arms
-        armInstances[0, :] = arms_T
-
-    print(armInstances[0])
-    return armInstances
