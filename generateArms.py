@@ -38,7 +38,7 @@ def generateArms_fixedDelta(K_list, T_list, numArmDists, alpha, numOpt, delta, v
                 arms = np.concatenate((np.random.uniform(alpha, 0.5, K - numOpt - 1),
                                        np.array([0.5]), np.ones(numOpt) * (0.5 + delta)))
                 if K > 2:
-                    np.random.shuffle(arms)  # not shuffling if there are two arms, for specific experiments
+                    np.random.shuffle(arms)  # not shuffling if there are two arms, for experiments where that matters
             else:
                 arms = np.ones(numOpt) * (0.5 + delta)
             armInstances[i, col:(col + K)] = arms
