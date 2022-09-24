@@ -1,6 +1,4 @@
 import numpy as np
-# import time
-# import random
 
 
 def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
@@ -14,8 +12,9 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
     cumReg = np.zeros(numT)
     reward = np.zeros(numT)
     stError = np.zeros(numT)
+    lastTime = np.zeros(numT)
     switch_stError = np.zeros((4, numT))
-    subOptRewards = np.zeros((4, numT))
+    numPull = np.zeros((4, numT))
     switch = np.zeros((4, numT))
     stError_perSim = np.zeros(int(endSim - startSim))
 
@@ -26,8 +25,9 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
         cumreward_sim = np.zeros(numInstance)
         cumReg_sim = np.zeros(numInstance)
         reward_sim = np.zeros(numInstance)
-        subOptRewards_sim = np.zeros((4, numInstance))
+        numPull_sim = np.zeros((4, numInstance))
         switch_sim = np.zeros((4, numInstance))
+        lastTime_sim = np.zeros(numInstance)
 
         for a in range(numInstance):
             arms = armInstances[a, (t * K):((t + 1) * K)]
@@ -39,6 +39,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
                 prev_pull = 0
                 index = np.zeros(K)
                 cumulative_reward = np.zeros(K)
+                lastTime_simLocal = 0
 
                 for i in range(T):
                     if i < K:
@@ -51,6 +52,11 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
                         prev_pull = pull
                     else:
                         pull = np.argmax(index)
+                        if pulls[0] == pulls[1]:
+                            lastTime_simLocal = i + 1
+                        if np.abs(index[0] - index[1]) < 1e-8:
+                            pull = int(np.random.binomial(1, 0.5, 1))
+
                         rew = np.random.binomial(1, arms[pull], 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
@@ -67,49 +73,51 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
                         else:
                             switch_sim[3, a] += (1 - prev_pull == pull)
                         prev_pull = pull
-
+                lastTime_sim[a] += lastTime_simLocal
                 cumreward_sim[a] += sum(cumulative_reward)
                 reward_sim[a] += max(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
                 cumReg_sim[a] += max(arms) * T - sum(cumulative_reward)
                 stError_perSim[j] = max(arms) * T - max(cumulative_reward)
-                if K == 2:
-                    subOptRewards_sim[0, a] += max(pulls) / T
+                if K > 2:
+                    numPull_sim[0, a] += max(pulls) / T
                 else:
-                    subOptRewards_sim[0, a] += 1 if ((pulls[0] - pulls_later[0]) >= (pulls[1] - pulls_later[1]) and
-                                                     (pulls_later[0] <= pulls_later[1])) else 0
-                    subOptRewards_sim[1, a] += 1 if ((pulls[0] - pulls_later[0]) <= (pulls[1] - pulls_later[1]) and
-                                                     (pulls_later[0] >= pulls_later[1])) else 0
-                    subOptRewards_sim[2, a] += 1 if ((pulls[0] - pulls_later[0]) < (pulls[1] - pulls_later[1]) and
-                                                     (pulls_later[0] < pulls_later[1])) else 0
-                    subOptRewards_sim[3, a] += 1 if ((pulls[0] - pulls_later[0]) > (pulls[1] - pulls_later[1]) and
+                    numPull_sim[0, a] += 1 if ((pulls[0] - pulls_later[0]) <= (pulls[1] - pulls_later[1]) and
                                                      (pulls_later[0] > pulls_later[1])) else 0
+                    numPull_sim[1, a] += 1 if ((pulls[0] - pulls_later[0]) < (pulls[1] - pulls_later[1]) and
+                                                     (pulls_later[0] <= pulls_later[1])) else 0
+                    numPull_sim[2, a] += 1 if ((pulls[0] - pulls_later[0]) >= (pulls[1] - pulls_later[1]) and
+                                                     (pulls_later[0] < pulls_later[1])) else 0
+                    numPull_sim[3, a] += 1 if ((pulls[0] - pulls_later[0]) > (pulls[1] - pulls_later[1]) and
+                                                     (pulls_later[0] >= pulls_later[1])) else 0
             regret_sim[a] /= (endSim - startSim)
             cumreward_sim[a] /= (endSim - startSim)
             cumReg_sim[a] /= (endSim - startSim)
             reward_sim[a] /= (endSim - startSim)
+            lastTime_sim[a] /= (endSim - startSim)
             for i in range(4):
                 switch_sim[i, a] /= (endSim - startSim)
 
-            subOptRewards_sim[0, a] /= (endSim - startSim)
-            if K > 2:
-                subOptRewards_sim[1, a] /= (endSim - startSim)
-                subOptRewards_sim[2, a] /= (endSim - startSim)
-                subOptRewards_sim[3, a] /= (endSim - startSim)
+            numPull_sim[0, a] /= (endSim - startSim)
+            if K == 2:
+                numPull_sim[1, a] /= (endSim - startSim)
+                numPull_sim[2, a] /= (endSim - startSim)
+                numPull_sim[3, a] /= (endSim - startSim)
 
         regret[t] = np.mean(regret_sim)
         cumreward[t] = np.mean(cumreward_sim)
         cumReg[t] = np.mean(cumReg_sim)
         reward[t] = np.mean(reward_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
+        lastTime[t] = np.mean(lastTime_sim)
         for i in range(4):
             switch[i, t] = np.mean(switch_sim[i])
             switch_stError[i, t] = np.sqrt(np.var(switch_sim[i]) / numInstance)
-        subOptRewards[0, t] = np.mean(subOptRewards_sim[0, :])
-        if K > 2:
-            subOptRewards[1, t] = np.mean(subOptRewards_sim[1, :])
-            subOptRewards[2, t] = np.mean(subOptRewards_sim[2, :])
-            subOptRewards[3, t] = np.mean(subOptRewards_sim[3, :])
+        numPull[0, t] = np.mean(numPull_sim[0, :])
+        if K == 2:
+            numPull[1, t] = np.mean(numPull_sim[1, :])
+            numPull[2, t] = np.mean(numPull_sim[2, :])
+            numPull[3, t] = np.mean(numPull_sim[3, :])
     if verbose:
         print("Naive UCB1 results:")
         print("K: " + str(K) + ", and T: ", end=" ")
@@ -123,17 +131,14 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
         print("Best Arm Rewards", end=" ")
         print(reward)
         print("Ratio of pulls spent on the most pulled arm to horizon T")
-        print(subOptRewards) if K == 2 else print(subOptRewards[0, :])
-        # print("Number of switches between arms")
-        # for i in range(4):
-        #     print("Quarter ", i)
-        #     print(switch[i])
+        print(numPull) if K == 2 else print(numPull[0, :])
+        print('optimal first two elements; among those, switch first, no switch second') if K == 2 else print()
+
         print('Number of switches between arms ', end='')
         print(switch[0] + switch[1] + switch[2] + switch[3])
-        # print("And their standard errors - nonzero if there are multiple arm instances")
-        # for i in range(4):
-        #     print("Quarter ", i)
-        #     print(switch_stError[i])
+
+        print("Last time the indices were super close " + str(lastTime) + " stError " +
+              str(np.sqrt(np.var(lastTime_sim) / numInstance)))
         print()
     return {'reward': reward,
             'cumreward': cumreward,
@@ -141,7 +146,7 @@ def naiveUCB1(armInstances, startSim, endSim, K_list, T_list, verbose=True):
             'regret': regret,
             'standardError': stError,
             'standardError_perSim': np.sqrt(np.var(stError_perSim) / (endSim - startSim)),
-            'pullRatios': subOptRewards,
+            'pullRatios': numPull,
             'numSwitches': switch,
             'numSwitchErrors': switch_stError}
 
@@ -415,6 +420,22 @@ def ADAETC_sub(arms, K, T, RADA=False):
             "pulls": pulls}
 
 
+def subIndices(K_, m_):
+    # subgroup indices, e.g., (K, m): (5, 2) should be [0, 1, 2] & [3, 4];
+    # (5, 3) should be [0, 1] & [2, 3] & [4]; (5, 4) should be [0, 1] & [2] & [3] & [4]
+    # (7, 3) should be [0, 1, 2] & [3, 4] & [5, 6]
+    # larger subsets are earlier
+    indices_ = {}
+    mParam = np.ceil(K_ / m_)  # 10
+    startInd = 0
+    for mm in range(m_):  # 3
+        endInd = startInd + mParam
+        indices_[str(mm)] = np.arange(startInd, endInd)
+        startInd = endInd
+        mParam -= 1 if K_ - endInd < (m_ - mm - 1) * mParam else 0
+    return indices_
+
+
 def ADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
     # fix K and vary T values
     K = K_list[0]
@@ -446,20 +467,19 @@ def ADAETC(armInstances, startSim, endSim, K_list, T_list, verbose=True):
                 pull_arm = np.argmax(pulls)
 
                 largestPull = pulls[pull_arm]
-                # interim = [aa for ii, aa in enumerate(pulls) if aa < largestPull]
-                # secondLargestPull = max(interim)
-
                 cumreward_sim[a] += sum(cumulative_reward)
                 reward_sim[a] += max(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
                 stError_perSim[j] = max(arms) * T - max(cumulative_reward)
                 cumReg_sim[a] += max(arms) * T - sum(cumulative_reward)
-                subOptRewards_sim[a] += (largestPull / T)  # max(secondLargestPull, 1))
+                subOptRewards_sim[a] += (largestPull / T)
+
             cumreward_sim[a] /= (endSim - startSim)
             cumReg_sim[a] /= (endSim - startSim)
             reward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
             subOptRewards_sim[a] /= (endSim - startSim)
+
         cumreward[t] = np.mean(cumreward_sim)
         cumReg[t] = np.mean(cumReg_sim)
         reward[t] = np.mean(reward_sim)
@@ -570,9 +590,11 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
                 reward_sim[a] += np.mean(cumulative_reward[pullset])
                 cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += first_m * int(capT / m) - np.mean(cumulative_reward[pullset])
+
             reward_sim[a] /= (endSim - startSim)
             cumreward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
+
         reward[t] = np.mean(reward_sim)
         cumreward[t] = np.mean(cumreward_sim)
         regret[t] = np.mean(regret_sim)
@@ -598,22 +620,6 @@ def m_ADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
 
 
 def RADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
-
-    def subIndices(K, m):
-        # subgroup indices, e.g., (K, m): (5, 2) should be [0, 1, 2] & [3, 4];
-        # (5, 3) should be [0, 1] & [2, 3] & [4]; (5, 4) should be [0, 1] & [2] & [3] & [4]
-        # (7, 3) should be [0, 1, 2] & [3, 4] & [5, 6]
-        # larger subsets are earlier
-        indices_ = {}
-        mParam = np.ceil(K / m)  # 10
-        startInd = 0
-        for mm in range(m):  # 3
-            endInd = startInd + mParam
-            indices_[str(mm)] = np.arange(startInd, endInd)
-            startInd = endInd
-            mParam -= 1 if K - endInd < (m - mm - 1) * mParam else 0
-        return indices_
-
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -634,9 +640,10 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
             arms = armInstances[a, (t * K):((t + 1) * K)]
             first_m = np.mean(arms[np.argsort(-arms)[0:m]])
             indices = subIndices(K, m)
+            # not controlling for rounding errors in T but grouping K arms properly
 
             for j in range(endSim - startSim):
-                # call ADAETC m times with randomly grouped K/m arms and T/m pulls per call
+                # call ADAETC m times with randomly grouped ~K/m arms and T/m pulls per call
                 res = {}
                 np.random.shuffle(arms)
 
@@ -652,12 +659,14 @@ def RADAETC(armInstances, startSim, endSim, K_list, T_list, m, verbose=True):
                     reward_sim[a] += max(cumulative_reward) / m
                     cumreward_sim[a] += sum(cumulative_reward) / m
                     regret_sim[a] -= max(cumulative_reward) / m
+
                 regret_sim[a] += first_m * int(capT / m)
                 stError_perSim[j] = regret_sim[a]
 
             reward_sim[a] /= (endSim - startSim)
             cumreward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
+
         reward[t] = np.mean(reward_sim)
         cumreward[t] = np.mean(cumreward_sim)
         regret[t] = np.mean(regret_sim)
@@ -750,10 +759,10 @@ def NADAETC(armInstances, startSim, endSim, K_list, T_list, ucbPart=2, verbose=T
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
-                # largestPull =
                 subOptRewards_sim[a] += (max(pulls) / T)
                 cumReg_sim[a] += max(arms) * T - sum(cumulative_reward)
                 stError_perSim[j] = max(arms) * T - max(cumulative_reward)
+
             reward_sim[a] /= (endSim - startSim)
             cumreward_sim[a] /= (endSim - startSim)
             cumReg_sim[a] /= (endSim - startSim)
@@ -865,8 +874,10 @@ def m_NADAETC(armInstances, startSim, endSim, K_list, T_list, m, ucbPart=2, verb
 
                 reward_sim[a] += np.mean(cumulative_reward[pullset])
                 regret_sim[a] += first_m * int(capT / m) - np.mean(cumulative_reward[pullset])
+
             reward_sim[a] /= (endSim - startSim)
             regret_sim[a] /= (endSim - startSim)
+
         reward[t] = np.mean(reward_sim)
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
