@@ -17,6 +17,7 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
     numPull = np.zeros((4, numT))
     switch = np.zeros((4, numT))
     stError_perSim = np.zeros(int(endSim))
+    slower_v_fasterArmUCB = np.zeros(numT)
 
     for t in range(numT):
         T = T_list[t]
@@ -28,6 +29,9 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
         numPull_sim = np.zeros((4, numInstance))
         switch_sim = np.zeros((4, numInstance))
         lastTime_sim = np.zeros(numInstance)
+        # first 2 rows for smallest UCBs up to T/4, next row is for the arm w/ at least T/2 pulls and its index at T/2
+        # last row keeps track of the events where the least pulled arm's min UCB beats the other's index at T/2
+        slower_v_fasterArmUCB_sim = np.zeros((4, numInstance))
 
         for a in range(numInstance):
             arms = armInstances[a, (t * K):((t + 1) * K)]
@@ -40,6 +44,7 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
                 index = np.zeros(K)
                 cumulative_reward = np.zeros(K)
                 lastTime_simLocal = 0
+                mostPulledArm = 0
 
                 for i in range(T):
                     if i < K:
@@ -50,20 +55,35 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
                         prev_pull = pull
+
+                        # policy independent statistics
+                        if K == 2:
+                            slower_v_fasterArmUCB_sim[pull, a] = index[pull]
                     else:
                         pull = np.argmax(index)
-                        if pulls[0] == pulls[1]:
-                            lastTime_simLocal = i + 1
-                        if np.abs(index[0] - index[1]) < 1e-8:
-                            pull = int(np.random.binomial(1, 0.5, 1))
+
+                        # K = 2 special case checks
+                        if K == 2:
+                            if pulls[0] == pulls[1]:  # denote the last time when the pulls were the same
+                                lastTime_simLocal = i + 1
+                            if np.abs(index[0] - index[1]) < 1e-8:  # if indices are super close, pick randomly
+                                pull = int(np.random.binomial(1, 0.5, 1))
+                            if i < T / 4:
+                                if index[pull] < slower_v_fasterArmUCB_sim[pull, a]:  # update smallest index so far
+                                    slower_v_fasterArmUCB_sim[pull, a] = index[pull]
+                            if pulls[pull] == T / 2:
+                                slower_v_fasterArmUCB_sim[2, a] = index[pull]
+                                mostPulledArm = pull
 
                         rew = np.random.binomial(1, arms[pull], 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
-                        if i > T * 0.5:
-                            pulls_later[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
+
+                        # policy independent statistics
+                        if i > T * 0.5:
+                            pulls_later[pull] += 1
                         if i <= T / 4:
                             switch_sim[0, a] += (1 - prev_pull == pull)
                         elif i <= T / 2:
@@ -73,6 +93,8 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
                         else:
                             switch_sim[3, a] += (1 - prev_pull == pull)
                         prev_pull = pull
+
+                # done with the simulation of an instance
                 lastTime_sim[a] += lastTime_simLocal
                 cumreward_sim[a] += sum(cumulative_reward)
                 reward_sim[a] += max(cumulative_reward)
@@ -90,6 +112,9 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
                                                      (pulls_later[0] < pulls_later[1])) else 0
                     numPull_sim[3, a] += 1 if ((pulls[0] - pulls_later[0]) > (pulls[1] - pulls_later[1]) and
                                                      (pulls_later[0] >= pulls_later[1])) else 0
+                    slower_v_fasterArmUCB_sim[3, a] += \
+                        slower_v_fasterArmUCB_sim[2, j] < slower_v_fasterArmUCB_sim[int(1 - mostPulledArm), j]
+
             regret_sim[a] /= endSim
             cumreward_sim[a] /= endSim
             cumReg_sim[a] /= endSim
@@ -97,12 +122,12 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
             lastTime_sim[a] /= endSim
             for i in range(4):
                 switch_sim[i, a] /= endSim
-
             numPull_sim[0, a] /= endSim
             if K == 2:
                 numPull_sim[1, a] /= endSim
                 numPull_sim[2, a] /= endSim
                 numPull_sim[3, a] /= endSim
+                slower_v_fasterArmUCB_sim[3, a] /= endSim
 
         regret[t] = np.mean(regret_sim)
         cumreward[t] = np.mean(cumreward_sim)
@@ -118,6 +143,8 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
             numPull[1, t] = np.mean(numPull_sim[1, :])
             numPull[2, t] = np.mean(numPull_sim[2, :])
             numPull[3, t] = np.mean(numPull_sim[3, :])
+            slower_v_fasterArmUCB[t] = np.mean(slower_v_fasterArmUCB_sim[3, :])
+
     if verbose:
         print("Naive UCB1 results:")
         print("K: " + str(K) + ", and T: ", end=" ")
@@ -139,6 +166,8 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
 
         print("Last time the indices were super close " + str(lastTime) + " stError " +
               str(np.sqrt(np.var(lastTime_sim) / numInstance)))
+        print("Frequency of min UCB_{T/4}(least pulled) > UCB(T/2)", end=" ")
+        print(slower_v_fasterArmUCB)
         print()
     return {'reward': reward,
             'cumreward': cumreward,

@@ -176,46 +176,50 @@ def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
 
 
 def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ucbPart_, numOpt_, generateIns_,
-                    rng=11, ucbSim=True):
+                    rng=11, ucbSim=True, justUCB='no'):
     print("Running m = 1")
     start_ = time.time()
     res = init_res()
     delt = np.zeros(rng)
     naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_ = 0, 0, 0, 0, 0, 0
     for i in range(rng):
+        multi = 50 if justUCB == 'yes' else 1
         print('Iteration ', i)
-        delt[i] = round((1 / ((rng - 1) * 2)) * i, 3)
+        delt[i] = round((1 / ((rng - 1) * 2 * multi)) * i, 3)
         armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, generateIns_, alpha__, numOpt_,
                                                    delta=delt[i], verbose=True)
-        # T_list_ = np.array([int(1 / delt[i])]) if delt[i] > 0 else np.array([100])
+        if justUCB == 'yes':
+            T_list_ = np.array([int(1 / delt[i])]) if delt[i] > 0 else np.array([100])
         # used to test for 0.5 v. 0.5 + 1/T case
 
-        if ucbSim:
+        if ucbSim or (justUCB == 'yes'):
             naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_)
             res = store_res(res, generateIns_, i, naiveUCB1_, 'UCB1')
-        ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
-        res = store_res(res, generateIns_, i, ADAETC_, 'ADAETC')
-        ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
-        res = store_res(res, generateIns_, i, ETC_, 'ETC')
-        NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
-        res = store_res(res, generateIns_, i, NADAETC_, 'NADAETC')
-        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
-        res = store_res(res, generateIns_, i, UCB1_stopping_, 'UCB1-s')
-        SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c=4)
-        res = store_res(res, generateIns_, i, SuccElim_, 'SuccElim')
+        if justUCB == 'no':
+            ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+            res = store_res(res, generateIns_, i, ADAETC_, 'ADAETC')
+            ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
+            res = store_res(res, generateIns_, i, ETC_, 'ETC')
+            NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
+            res = store_res(res, generateIns_, i, NADAETC_, 'NADAETC')
+            UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
+            res = store_res(res, generateIns_, i, UCB1_stopping_, 'UCB1-s')
+            SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c=4)
+            res = store_res(res, generateIns_, i, SuccElim_, 'SuccElim')
     print("took " + str(time.time() - start_) + " seconds")
 
-    a = 0 if ucbSim else 1
-    for i in range(a, 2):
-        UCBin = i == 0
-        plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                           generateIns_, alpha__, numOpt_, UCBin)
-        plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                           generateIns_, alpha__, numOpt_, UCBin, 'cumrew')
-        plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                           generateIns_, alpha__, numOpt_, UCBin, 'cumReg')
-        plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                           generateIns_, alpha__, numOpt_, UCBin, 'Reward')
+    if justUCB == 'no':
+        a = 0 if ucbSim else 1
+        for i in range(a, 2):
+            UCBin = i == 0
+            plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
+                               generateIns_, alpha__, numOpt_, UCBin)
+            plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
+                               generateIns_, alpha__, numOpt_, UCBin, 'cumrew')
+            plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
+                               generateIns_, alpha__, numOpt_, UCBin, 'cumReg')
+            plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
+                               generateIns_, alpha__, numOpt_, UCBin, 'Reward')
 
     return {'UCB1': naiveUCB1_,
             'ADAETC': ADAETC_,
@@ -309,11 +313,11 @@ if __name__ == '__main__':
     K_list = np.array([2])
     T_list = np.array([100])  # np.arange(1, 3) * 250000  # np.array([100])  #
     m = 2
-    numArmDists = 5000
+    numArmDists = 1000
     alpha_ = 0  # can be used for both
     ucbPart = 2
     endSim = 1
-    doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'rott'
+    doing = 'm1bar'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
         # market-like simulation
@@ -341,11 +345,14 @@ if __name__ == '__main__':
     elif doing == 'm1bar':
         # fixed means but difference is specified between two best arms, varying difference between means, m = 1
         mEqOne_barPlots(K_list, T_list, endSim, alpha_, ucbPart_=ucbPart,
-                        numOpt_=1, generateIns_=numArmDists, rng=11, ucbSim=True)
+                        numOpt_=1, generateIns_=numArmDists, rng=11, ucbSim=True, justUCB='yes')
         # generateIns_ takes the place of running with multiple arm instances
         # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
         # change numOpt to >1 to generate K - numOpt - 1 random arms in uniform(0, 0.5), one at exactly 0.5,
         # and numOpt many with delta distance to 0.5
+        # ucbSim is True is going for including UCB in
+        # justUCB is 'no' if not going only for UCB but others too, o/w it's 'yes'
+        # If yes, the instances are so that the \Delta between arms govern the T
     elif doing == 'rott':
         # rotting bandits part
         rotting(K_list, T_list, numArmDists, endSim, alpha_, beta__=0.01, pw_=1 / 2)
