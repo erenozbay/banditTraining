@@ -144,7 +144,8 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
     plt.cla()
 
 
-def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_, params_):
+def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
+                 NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_):
     numOpt_, alpha__, totSims_, ucbPart_ = params_['numOpt'], params_['alpha'], params_['totalSim'], params_['ucbPart']
     numArmDists_, constant_c, delt_, m_ = params_['numArmDists'], params_['c'], params_['delta'], params_['m']
 
@@ -159,6 +160,9 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.plot(T_list, naiveUCB1_['regret'], color='b', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
                      color='b', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, Switching_['regret'], color='gray', label='Switch')
+        plt.errorbar(T_list, Switching_['regret'], yerr=Switching_['standardError'],
+                     color='gray', fmt='o', markersize=4, capsize=4)
     if i < 2:
         plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
@@ -198,6 +202,9 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
         plt.plot(T_list, naiveUCB1_['cumReg'], color='b', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError'],
                      color='b', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, Switching_['cumReg'], color='gray', label='Switch')
+        plt.errorbar(T_list, Switching_['cumReg'], yerr=Switching_['standardError'],
+                     color='gray', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, ADAETC_['cumReg'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['cumReg'], yerr=ADAETC_['standardError'],
                      color='r', fmt='o', markersize=4, capsize=4)

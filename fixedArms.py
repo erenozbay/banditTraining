@@ -1174,7 +1174,6 @@ def SuccElim(armInstances, endSim, K_list, T_list, constant_c, verbose=True):
                 cumulative_reward = np.zeros(K)
                 delta = np.power(K / T, 1 / 3)
                 rounds = int(np.ceil(np.power(T / K, 2 / 3)))
-                pull_arm = 0
 
                 for i in range(rounds):
                     if i == 0:
@@ -1202,8 +1201,7 @@ def SuccElim(armInstances, endSim, K_list, T_list, constant_c, verbose=True):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
 
-                    pull_arm = np.argmax(empirical_mean)
-
+                pull_arm = np.argmax(empirical_mean)
                 cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
                 pulls[pull_arm] += int(T - sum(pulls))
                 largestPull = pulls[pull_arm]
@@ -1229,6 +1227,118 @@ def SuccElim(armInstances, endSim, K_list, T_list, constant_c, verbose=True):
         subOptRewards[t] = np.mean(subOptRewards_sim)
     if verbose:
         print("Successive elimination results:")
+        print("K: " + str(K) + ", and T: ", end=" ")
+        print(T_list)
+        print("Regrets", end=" ")
+        print(regret)
+        print("Standard errors", end=" ")
+        print(stError)
+        print("Best Arm Rewards", end=" ")
+        print(reward)
+        print("Total Cumulative Rewards", end=" ")
+        print(cumreward)
+        print("Ratio of pulls spent on the most pulled arm to horizon T")
+        print(subOptRewards)
+        print()
+    return {'reward': reward,
+            'cumreward': cumreward,
+            'cumReg': cumReg,
+            'standardError_perSim': np.sqrt(np.var(stError_perSim) / endSim),
+            'regret': regret,
+            'standardError': stError}
+
+
+def Switching(armInstances, endSim, K_list, T_list, verbose=True):
+    # fix K and vary T values
+    K = K_list[0]
+    numT = len(T_list)
+    numInstance = len(armInstances)
+
+    regret = np.zeros(numT)
+    reward = np.zeros(numT)
+    cumreward = np.zeros(numT)
+    stError = np.zeros(numT)
+    subOptRewards = np.zeros(numT)
+    cumReg = np.zeros(numT)
+    stError_perSim = np.zeros(int(endSim))
+
+    for t in range(numT):
+        T = T_list[t]
+        capT = T  # np.ceil(np.power(K * np.power(T, 2), 1/3))
+        regret_sim = np.zeros(numInstance)
+        reward_sim = np.zeros(numInstance)
+        cumreward_sim = np.zeros(numInstance)
+        cumReg_sim = np.zeros(numInstance)
+        subOptRewards_sim = np.zeros(numInstance)
+
+        # find the number of stages
+        stage = 0
+        sum_stage = np.power(capT, (1 - np.power(1 / 2, stage)))
+        while sum_stage < capT:
+            stage += 1
+            sum_stage += np.power(capT, (1 - np.power(1 / 2, stage)))
+
+        for a in range(numInstance):
+            arms = armInstances[a, (t * K):((t + 1) * K)]
+
+            for j in range(endSim):
+                empirical_mean = np.zeros(K)
+                pulls = np.zeros(K)
+                candidates = np.arange(K)
+                cumulative_reward = np.zeros(K)
+                delta = 1 / capT if capT == T else np.power(K / T, 1 / 3)
+                bb, c1, c2 = 2, 1 / 2, 1
+                largestPull = 0
+
+                for i in range(stage):
+                    upperC = np.sqrt(c2 * (bb / c1) * (K / np.power(capT, (1 - np.power(1 / 2, i)))) *
+                                     np.log(K * stage / delta))
+                    pullEachArm = min(np.ceil(np.power(capT, (1 - np.power(1 / 2, i))) / len(candidates)),
+                                      (capT - sum(pulls)) / len(candidates))
+
+                    # pull arms
+                    for ij in range(len(candidates)):
+                        pull = candidates[ij]
+                        rew = np.random.binomial(1, arms[pull], int(pullEachArm))
+                        cumulative_reward[pull] += sum(rew)
+                        pulls[pull] += int(pullEachArm)
+                        empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
+
+                    # elimination step
+                    highest_mean = max(empirical_mean)
+                    confidence = highest_mean - 2 * upperC
+                    candidates = candidates[empirical_mean[candidates] > confidence]
+
+                    if len(candidates) < 2:
+                        break
+
+                pull_arm = np.argmax(empirical_mean)
+                if int(T - sum(pulls)) > 0:
+                    cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
+                    pulls[pull_arm] += int(T - sum(pulls))
+                    largestPull = pulls[pull_arm]
+
+                reward_sim[a] += max(cumulative_reward)
+                cumreward_sim[a] += sum(cumulative_reward)
+                regret_sim[a] += max(arms) * T - max(cumulative_reward)
+                subOptRewards_sim[a] += (largestPull / T)
+                cumReg_sim[a] += max(arms) * T - sum(cumulative_reward)
+                stError_perSim[j] = max(arms) * T - max(cumulative_reward)
+
+            reward_sim[a] /= endSim
+            cumreward_sim[a] /= endSim
+            cumReg_sim[a] /= endSim
+            regret_sim[a] /= endSim
+            subOptRewards_sim[a] /= endSim
+
+        reward[t] = np.mean(reward_sim)
+        cumreward[t] = np.mean(cumreward_sim)
+        cumReg[t] = np.mean(cumReg_sim)
+        regret[t] = np.mean(regret_sim)
+        stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
+        subOptRewards[t] = np.mean(subOptRewards_sim)
+    if verbose:
+        print("Switching costs results:")
         print("K: " + str(K) + ", and T: ", end=" ")
         print(T_list)
         print("Regrets", end=" ")

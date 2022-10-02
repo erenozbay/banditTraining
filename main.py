@@ -266,6 +266,7 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, ucbPart_, numOpt_, 
     UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, ucbPart_, orig=True)
     SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
     naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_) if ucbSim else ADAETC_
+    Switching_ = fA.Switching(armInstances_, endSim, K_list, T_list)
 
     print("took " + str(time.time() - start_) + " seconds")
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
@@ -274,9 +275,11 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, ucbPart_, numOpt_, 
     if plots:
         a = 0 if ucbSim else 1
         for i in range(a, 2):
-            plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_, params_)
+            plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
+                         NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_)
         if ucbSim:
-            plot_fixed_m(3, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_, params_)
+            plot_fixed_m(3, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
+                         NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_)
     return {'UCB1': naiveUCB1_,
             'ADAETC': ADAETC_,
             'ETC': ETC_,
@@ -323,7 +326,7 @@ if __name__ == '__main__':
     numArmDists = 10
     alpha_ = 0  # can be used for both
     ucbPart = 2
-    endSim = 40
+    endSim = 50
     doing = 'm1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
