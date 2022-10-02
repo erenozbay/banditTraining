@@ -68,10 +68,10 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
                                 lastTime_simLocal = i + 1
                             if np.abs(index[0] - index[1]) < 1e-8:  # if indices are super close, pick randomly
                                 pull = int(np.random.binomial(1, 0.5, 1))
-                            if i < T / 4:
+                            if i < T / 25:
                                 if index[pull] < slower_v_fasterArmUCB_sim[pull, a]:  # update smallest index so far
                                     slower_v_fasterArmUCB_sim[pull, a] = index[pull]
-                            if pulls[pull] == T / 2:
+                            if pulls[pull] == int(T / 2) - 1:
                                 slower_v_fasterArmUCB_sim[2, a] = index[pull]
                                 mostPulledArm = pull
 
@@ -113,7 +113,7 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
                     numPull_sim[3, a] += 1 if ((pulls[0] - pulls_later[0]) > (pulls[1] - pulls_later[1]) and
                                                      (pulls_later[0] >= pulls_later[1])) else 0
                     slower_v_fasterArmUCB_sim[3, a] += \
-                        slower_v_fasterArmUCB_sim[2, j] < slower_v_fasterArmUCB_sim[int(1 - mostPulledArm), j]
+                        slower_v_fasterArmUCB_sim[2, a] < slower_v_fasterArmUCB_sim[int(1 - mostPulledArm), a]
 
             regret_sim[a] /= endSim
             cumreward_sim[a] /= endSim
@@ -166,8 +166,10 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
 
         print("Last time the indices were super close " + str(lastTime) + " stError " +
               str(np.sqrt(np.var(lastTime_sim) / numInstance)))
-        print("Frequency of min UCB_{T/4}(least pulled) > UCB(T/2)", end=" ")
+        print("Frequency of min UCB_{T/25}(least pulled) > UCB(T/2)", end=" ")
         print(slower_v_fasterArmUCB)
+        print()
+        print(slower_v_fasterArmUCB_sim)
         print()
     return {'reward': reward,
             'cumreward': cumreward,

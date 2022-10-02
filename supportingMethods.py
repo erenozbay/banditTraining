@@ -148,7 +148,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_s
     numOpt_, alpha__, totSims_, ucbPart_ = params_['numOpt'], params_['alpha'], params_['totalSim'], params_['ucbPart']
     numArmDists_, constant_c, delt_, m_ = params_['numArmDists'], params_['c'], params_['delta'], params_['m']
 
-    plt.figure(figsize=(7, 5), dpi=100)
+    if len(T_list) <= 10:
+        plt.figure(figsize=(7, 5), dpi=100)
+    else:
+        plt.figure(figsize=(12, 8.5), dpi=100)
     plt.rc('axes', axisbelow=True)
     plt.grid()
 

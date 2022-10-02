@@ -177,7 +177,7 @@ def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
 
 def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ucbPart_, numOpt_, generateIns_,
                     rng=11, ucbSim=True, justUCB='no'):
-    print("Running m = 1")
+    print("Running m = 1, justUCB: " + justUCB)
     start_ = time.time()
     res = init_res()
     delt = np.zeros(rng)
@@ -185,12 +185,12 @@ def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ucbPart_, numOpt_, gener
     for i in range(rng):
         multi = 50 if justUCB == 'yes' else 1
         print('Iteration ', i)
-        delt[i] = round((1 / ((rng - 1) * 2 * multi)) * i, 3)
+        delt[i] = round((1 / ((rng - 1) * 2 * multi)) * i, 5)
         armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, generateIns_, alpha__, numOpt_,
-                                                   delta=delt[i], verbose=True)
+                                                   delta=np.array([delt[i]]), verbose=True)
         if justUCB == 'yes':
             T_list_ = np.array([int(1 / delt[i])]) if delt[i] > 0 else np.array([100])
-        # used to test for 0.5 v. 0.5 + 1/T case
+            # used to test for 0.5 v. 0.5 + 1/T case
 
         if ucbSim or (justUCB == 'yes'):
             naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_)
@@ -231,8 +231,8 @@ def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ucbPart_, numOpt_, gener
 
 
 def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, ucbPart_, numOpt_, delt_,
-           plots=True, ucbSim=True, fixed='whatever'):
-    print("Running m = 1")
+           plots=True, ucbSim=True, fixed='whatever', justUCB='no'):
+    print("Running m = 1, justUCB: " + justUCB)
     constant_c = 4
     start_ = time.time()
     if fixed == 'Gap':
@@ -241,6 +241,12 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, ucbPart_, numOpt_, 
     elif fixed == 'Intervals':
         armInstances_ = gA.generateArms_fixedIntervals(K_list, T_list, numArmDists_, verbose=True)  # randomized
         print("Fixed intervals")
+    elif justUCB == 'yes':
+        def fn(x):
+            return (1 / np.sqrt(x)).round(5)
+        delt = fn(T_list_)
+        armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, numArmDists_, alpha__, numOpt_,
+                                                   delta=delt, verbose=True)
     else:
         if numOpt_ == 1 and delt_ == 0:
             armInstances_ = gA.generateArms(K_list_, T_list_, numArmDists_, alpha__, verbose=True)
@@ -253,6 +259,7 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, ucbPart_, numOpt_, 
             else:
                 print(str(numOpt_) + " opt arms, gap " + str(delt_))
 
+    # if justUCB == 'no':
     ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
     ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
     NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
@@ -311,23 +318,23 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, ucbPart_, num
 
 if __name__ == '__main__':
     K_list = np.array([2])
-    T_list = np.array([100])  # np.arange(1, 3) * 250000  # np.array([100])  #
+    T_list = np.arange(1, 21) * 500  # np.arange(1, 3) * 250000  # np.array([100])  #
     m = 2
-    numArmDists = 1000
+    numArmDists = 10
     alpha_ = 0  # can be used for both
     ucbPart = 2
-    endSim = 1
-    doing = 'm1bar'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    endSim = 40
+    doing = 'm1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
         # market-like simulation
         meanK = 10  # we will have totalPeriods-many streams, so mean can be set based on that
-        meanT = 200
+        meanT = 100
         numStreams = 1  # number of different K & T streams in total
         algorithms = None  # go for {'rada': {}, 'ucb1': {}} if only want rada-etc and ucb1
         totalPeriods = 120
         m_vals = np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30, 40, 60, 120])
-            # np.array([1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72])
+        # np.array([1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72])
         market = marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals,
                            alpha_, endSim, algs=algorithms, ucbPart_=ucbPart,
                            numOptPerPeriod='none')  # or 'one' or any number
@@ -337,7 +344,7 @@ if __name__ == '__main__':
         #     result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_,
         #                     ucbPart_=ucbPart, numOpt_=1, delt_=round(0.1 * (j + 1), 1), plots=True, fixedGap=False)
         result = mEqOne(K_list, T_list, numArmDists, endSim, alpha_, ucbPart_=ucbPart,
-                        numOpt_=1, delt_=0, plots=True, ucbSim=False, fixed='no')
+                        numOpt_=1, delt_=0, plots=True, ucbSim=True, fixed='no', justUCB='yes')
         # # fixed='Intervals' or 'Gap' or anything else
     elif doing == 'mGeq1':
         # fixed mean rewards throughout, m > 1
