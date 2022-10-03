@@ -132,6 +132,10 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                 best_rewards += res['stream_' + str(st)]['best']
                 once += 1
 
+    alg_rews = {'ada': [], 'rada': [], 'etc': [], 'nada': [], 'ucb1s': [], 'ucb1': []}
+    alg_stdevs = {'ada': [], 'rada': [], 'etc': [], 'nada': [], 'ucb1s': [], 'ucb1': []}
+    bestRew = np.zeros(len(m_vals_))
+    once = 0
     # printing results for each algorithm
     print("numArmDist", numArmDists_, "; alpha", alpha__, "; sims", endSim_,
           "; meanK", meanK_, "; meanT", meanT_, "; numStreams", numStreams_)
@@ -142,17 +146,31 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
         print('Rewards:')
         print('Best: ', best_rewards)
         for i in range(len(m_vals_)):
-            print("m =", str(m_vals_[i]), ": ", round(rewards[keys]['m = ' + str(m_vals_[i])], 5))
+            rew = round(rewards[keys]['m = ' + str(m_vals_[i])], 5)
+            print("m =", str(m_vals_[i]), ": ", rew)
+            alg_rews[keys].append(rew)
+            if once == 0:
+                bestRew[i] += rew
         print()
         print('Standard deviation of rewards')
         for i in range(len(m_vals_)):
-            print("m =", str(m_vals_[i]), ": ", round(stdevs[keys]['m = ' + str(m_vals_[i])], 5))
+            stdev = round(stdevs[keys]['m = ' + str(m_vals_[i])], 5)
+            print("m =", str(m_vals_[i]), ": ", stdev)
+            alg_stdevs[keys].append(stdev)
         print()
         print('Regrets')
         for i in range(len(m_vals_)):
-            print("m =", str(m_vals_[i]), ": ", round(regrets[keys]['reg: m = ' + str(m_vals_[i])], 5))
+            reg = round(regrets[keys]['reg: m = ' + str(m_vals_[i])], 5)
+            print("m =", str(m_vals_[i]), ": ", reg)
+            if once == 0:
+                bestRew[i] += reg
+        once += 1
 
     print("Done after ", str(round(time.time() - start_, 2)), " seconds from start.")
+    params_ = {'numOpt': numOptPerPeriod, 'alpha': alpha__, 'bestReward': bestRew,
+               'numArmDists': numArmDists_, 'totalSim': endSim_}
+
+    plot_marketSim(meanK_, meanT_, m_vals_, alg_rews, alg_stdevs, params_)
 
     return {'result': res,
             'regret': resreg,
@@ -310,7 +328,8 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, ucbPart_, num
                'numArmDists': numArmDists_, 'c': 1, 'delta': delt_, 'm': m_, 'ucbPart': ucbPart_}
 
     # first argument is set to 2 to use the general m plots
-    plot_fixed_m(2, K_list_, T_list, m_naiveUCB1, m_ADAETC_, m_ETC_, m_NADAETC_, m_UCB1_stopping_, RADAETC_, params_)
+    plot_fixed_m(2, K_list_, T_list, m_naiveUCB1, m_ADAETC_, m_ETC_, m_NADAETC_, m_UCB1_stopping_, RADAETC_,
+                 RADAETC_, params_)  # last RADAETC_ is for switching bandits
     print("UCB part for NADA-ETC and UCB1-s is " + str(ucbPart_))
     return {'RADAETC': RADAETC_,
             'ADAETC': m_ADAETC_,
@@ -321,13 +340,13 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, ucbPart_, num
 
 if __name__ == '__main__':
     K_list = np.array([2])
-    T_list = np.arange(1, 21) * 500  # np.arange(1, 3) * 250000  # np.array([100])  #
+    T_list = np.arange(1, 16) * 500  # np.arange(1, 3) * 250000  # np.array([100])  #
     m = 2
-    numArmDists = 10
+    numArmDists = 1
     alpha_ = 0  # can be used for both
     ucbPart = 2
-    endSim = 50
-    doing = 'm1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    endSim = 1
+    doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
         # market-like simulation

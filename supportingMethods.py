@@ -1,36 +1,37 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import fixedArms as fA
+import matplotlib.ticker as ticker
 
 
 def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
     output = {'reward': -1e8, 'regret': 1e8}
     if m_ == 1:
         if alg == 'ada' or alg == 'rada':
-            output = fA.ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            output = fA.ADAETC(armMeansArray_, 1, arrayK_, arrayT_, verbose=False)
         elif alg == 'nada':
-            output = fA.NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
+            output = fA.NADAETC(armMeansArray_, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
         elif alg == 'ucb1s':
-            output = fA.UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, ucbPart_,
+            output = fA.UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, ucbPart_,
                                               orig=True, verbose=False)
         elif alg == 'ucb1':
-            output = fA.naiveUCB1(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            output = fA.naiveUCB1(armMeansArray_, 1, arrayK_, arrayT_, verbose=False)
         elif alg == 'etc':
-            output = fA.ETC(armMeansArray_, 0, 1, arrayK_, arrayT_, verbose=False)
+            output = fA.ETC(armMeansArray_, 1, arrayK_, arrayT_, verbose=False)
     else:
         if alg == 'ada':
-            output = fA.m_ADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            output = fA.m_ADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
         elif alg == 'rada':
-            output = fA.RADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            output = fA.RADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
         elif alg == 'nada':
-            output = fA.m_NADAETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
+            output = fA.m_NADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
         elif alg == 'ucb1s':
-            output = fA.m_UCB1_stopping(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, ucbPart_,
+            output = fA.m_UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, m_, ucbPart_,
                                                   orig=True, verbose=False)
         elif alg == 'ucb1':
-            output = fA.m_naiveUCB1(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            output = fA.m_naiveUCB1(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
         elif alg == 'etc':
-            output = fA.m_ETC(armMeansArray_, 0, 1, arrayK_, arrayT_, m_, verbose=False)
+            output = fA.m_ETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
     reward = output['reward']
     regret = output['regret']
     return {'reward': reward, 'regret': regret}
@@ -167,9 +168,9 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
                      color='r', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, ETC_['regret'], color='g', label='ETC')
+        plt.plot(T_list, ETC_['regret'], color='mediumseagreen', label='ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
-                     color='g', fmt='o', markersize=4, capsize=4)
+                     color='mediumseagreen', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC')
         plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
                      color='magenta', fmt='o', markersize=4, capsize=4)
@@ -186,9 +187,9 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, ADAETC_['regret'], color='r', label='m-ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
                      color='r', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, ETC_['regret'], color='g', label='m-ETC')
+        plt.plot(T_list, ETC_['regret'], color='mediumseagreen', label='m-ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
-                     color='g', fmt='o', markersize=4, capsize=4)
+                     color='mediumseagreen', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, NADAETC_['regret'], color='magenta', label='m-NADA-ETC')
         plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
                      color='magenta', fmt='o', markersize=4, capsize=4)
@@ -208,9 +209,9 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, ADAETC_['cumReg'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['cumReg'], yerr=ADAETC_['standardError'],
                      color='r', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, ETC_['cumReg'], color='g', label='ETC')
+        plt.plot(T_list, ETC_['cumReg'], color='mediumseagreen', label='ETC')
         plt.errorbar(T_list, ETC_['cumReg'], yerr=ETC_['standardError'],
-                     color='g', fmt='o', markersize=4, capsize=4)
+                     color='mediumseagreen', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, NADAETC_['cumReg'], color='magenta', label='NADA-ETC')
         plt.errorbar(T_list, NADAETC_['cumReg'], yerr=NADAETC_['standardError'],
                      color='magenta', fmt='o', markersize=4, capsize=4)
@@ -242,5 +243,35 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
                     '_sumObj_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '_c' +
                     str(constant_c) + '_delta' + str(delt_) + '.eps', format='eps', bbox_inches='tight')
+
+    plt.cla()
+
+
+def plot_marketSim(K_, T_, m_vals_, rews, stdevs, params_):
+    numOpt_, alpha__, bestRew = params_['numOpt'], params_['alpha'], params_['bestReward']
+    numArmDist_, totSims_ = params_['numArmDists'], params_['totalSim']
+
+    plt.figure(figsize=(7, 5), dpi=100)
+    plt.rc('axes', axisbelow=True)
+    plt.grid()
+
+    colors = ['red', 'purple', 'mediumseagreen', 'magenta', 'navy', 'blue']
+    labels = ['ADA-ETC', 'RADA-ETC', 'ETC', 'NADA-ETC', 'UCB1-s', 'UCB1']
+
+    counter = 0
+    for keys in rews.keys():
+        plt.plot(m_vals_.astype('str'), rews[keys], color=colors[counter], label=labels[counter])
+        plt.errorbar(m_vals_.astype('str'), rews[keys], yerr=stdevs[keys], color=colors[counter],
+                     fmt='o', markersize=4, capsize=4)
+        counter += 1
+    plt.plot(m_vals_.astype('str'), bestRew, color='darkgreen', linestyle='--', label='Best')
+
+    plt.ylabel('Reward', fontsize=13)
+    plt.xlabel('m', fontsize=13)
+
+    plt.legend(loc="upper left", bbox_to_anchor=(1, 1.02))
+    plt.savefig('res/marketSim_' + str(numOpt_) + 'optArms_meanK' + str(K_) + '_meanT' + str(T_) + '_alpha' +
+                str(alpha__) + '_sim' + str(totSims_) + '_armDist' + str(numArmDist_) + '.eps',
+                format='eps', bbox_inches='tight')
 
     plt.cla()
