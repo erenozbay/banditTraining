@@ -13,12 +13,13 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     res = {}  # used to store the reward for each (K, T)-pair stream and algorithm
     resreg = {}  # used to store the regret for each (K, T)-pair stream and algorithm
     stdev = {}  # used to store the standard deviation of rewards for each (K, T)-pair stream and algorithm
-    algs_for_res = deepcopy(algs)
-    algs_for_res.update(dict(best=0))
+
     for st in range(numStreams_):
-        res['stream_' + str(st)] = algs_for_res
+        res['stream_' + str(st)] = deepcopy(algs)
         resreg['stream_' + str(st)] = deepcopy(algs)
         stdev['stream_' + str(st)] = deepcopy(algs)
+        for keys in algs.keys():
+            res['stream_' + str(st)][keys]['best'] = {}
 
     # a single instance will run with multiple simulations
     # a single instance will have a fixed list of K and T for each period as well as arm means
@@ -45,18 +46,15 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     for st in range(numStreams_):
         K_list_ = np.array(K_list_stream[str(st)])
         T_list_ = np.array(T_list_stream[str(st)])
-        # print(K_list_)
+
         for a in range(numArmDists_):
             if (a + 1) % 5 == 0:
                 print("Arm dist number ", str(a + 1), ", K&T stream number", str(st + 1), ", time ",
                       str(time.time() - start_), " from start.")
 
             # generate arm means, either each period has one optimal arm (across all periods) or no such arrangement
-            armsInfo = gA.generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPeriod)
-            armInstances_ = armsInfo['armInstances']
-            best_top_m_avg_reward = armsInfo['best_top_m_avg_reward']
-            total_T = armsInfo['total_T']
-            # print(armInstances_)
+            armInstances_ = gA.generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPeriod)
+
             # run multiple simulations for varying values of m
             # if m = 1, every period is run individually and ADA-ETC is called using corresponding (K, T) pair
             # if m > 1, then multiple periods are combined and m-ADA-ETC is called using corresponding (K, T) pair which
@@ -68,6 +66,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                 stdev_local = {}
                 for keys in algs.keys():
                     res['stream_' + str(st)][keys]['m = ' + str(m_val)] = 0
+                    res['stream_' + str(st)][keys]['best']['m = ' + str(m_val)] = 0
                     resreg['stream_' + str(st)][keys]['reg: m = ' + str(m_val)] = 0
                     stdev_local[keys] = []
 
@@ -105,37 +104,33 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                             # .item() is used to get the value, not as a 1-dim array, i.e., fixing the type
                             res['stream_' + str(st)][alg_keys]['m = ' + str(m_val)] += rew
                             resreg['stream_' + str(st)][alg_keys]['reg: m = ' + str(m_val)] += reg
+                            res['stream_' + str(st)][alg_keys]['best']['m = ' + str(m_val)] += rew + reg
 
                     # get the standard deviation on rewards
                     for alg_keys in algs.keys():
                         stdev['stream_' + str(st)][alg_keys]['m = ' + str(m_val)] = \
                             np.sqrt(np.var(np.array(stdev_local[alg_keys])) / int(len(stdev_local[alg_keys])))
 
-            # store the best reward
-            res['stream_' + str(st)]['best'] += total_T * best_top_m_avg_reward / numArmDists_
-
     # storing results for each algorithm for each m value, across different (K, T)-pair streams (if multiple)
-    rewards, stdevs, regrets, best_rewards, once = deepcopy(algs), deepcopy(algs), deepcopy(algs), 0, 0
+    rewards, stdevs, regrets, best_rews = deepcopy(algs), deepcopy(algs), deepcopy(algs), deepcopy(algs)
     for j in range(len(m_vals_)):
         m_val = m_vals_[j]
         for keys in algs.keys():
             rewards[keys]['m = ' + str(m_val)] = 0
             regrets[keys]['reg: m = ' + str(m_val)] = 0
             stdevs[keys]['m = ' + str(m_val)] = 0
+            best_rews[keys]['m = ' + str(m_val)] = 0
         for st in range(numStreams_):
             for kys in algs.keys():
                 rewards[kys]['m = ' + str(m_val)] += res['stream_' + str(st)][kys]['m = ' + str(m_val)] / numStreams_
                 regrets[kys]['reg: m = ' + str(m_val)] += \
                     resreg['stream_' + str(st)][kys]['reg: m = ' + str(m_val)] / numStreams_
                 stdevs[kys]['m = ' + str(m_val)] += stdev['stream_' + str(st)][kys]['m = ' + str(m_val)] / numStreams_
-            if once < numStreams_:
-                best_rewards += res['stream_' + str(st)]['best']
-                once += 1
+                best_rews[kys]['m = ' + str(m_val)] += res['stream_' + str(st)][kys]['best']['m = ' + str(m_val)] / \
+                                                       numStreams_
 
     alg_rews = {'ada': [], 'rada': [], 'etc': [], 'nada': [], 'ucb1s': [], 'ucb1': []}
     alg_stdevs = {'ada': [], 'rada': [], 'etc': [], 'nada': [], 'ucb1s': [], 'ucb1': []}
-    bestRew = np.zeros(len(m_vals_))
-    once = 0
     # printing results for each algorithm
     print("numArmDist", numArmDists_, "; alpha", alpha__, "; sims", endSim_,
           "; meanK", meanK_, "; meanT", meanT_, "; numStreams", numStreams_)
@@ -144,13 +139,11 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
         print('--' * 20)
         print(keys + ' results ')
         print('Rewards:')
-        print('Best: ', best_rewards)
+        print('Best: ', best_rews['ada'])
         for i in range(len(m_vals_)):
             rew = round(rewards[keys]['m = ' + str(m_vals_[i])], 5)
             print("m =", str(m_vals_[i]), ": ", rew)
             alg_rews[keys].append(rew)
-            if once == 0:
-                bestRew[i] += rew
         print()
         print('Standard deviation of rewards')
         for i in range(len(m_vals_)):
@@ -162,12 +155,9 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
         for i in range(len(m_vals_)):
             reg = round(regrets[keys]['reg: m = ' + str(m_vals_[i])], 5)
             print("m =", str(m_vals_[i]), ": ", reg)
-            if once == 0:
-                bestRew[i] += reg
-        once += 1
 
     print("Done after ", str(round(time.time() - start_, 2)), " seconds from start.")
-    params_ = {'numOpt': numOptPerPeriod, 'alpha': alpha__, 'bestReward': bestRew,
+    params_ = {'numOpt': numOptPerPeriod, 'alpha': alpha__, 'bestReward': best_rews['ada'].values(),
                'numArmDists': numArmDists_, 'totalSim': endSim_}
 
     plot_marketSim(meanK_, meanT_, m_vals_, alg_rews, alg_stdevs, params_)
@@ -342,10 +332,10 @@ if __name__ == '__main__':
     K_list = np.array([2])
     T_list = np.arange(1, 16) * 500  # np.arange(1, 3) * 250000  # np.array([100])  #
     m = 2
-    numArmDists = 1
+    numArmDists = 2
     alpha_ = 0  # can be used for both
     ucbPart = 2
-    endSim = 1
+    endSim = 2
     doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
