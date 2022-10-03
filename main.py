@@ -96,8 +96,8 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                         col_start += int(K_list_[int(indices[j])])
 
                     # get the best reward for this m value, and (K, T)-pair
-                    best_rew['stream_' + str(st)]['arm_' + str(a)][i] = \
-                        np.mean(np.sort(arms_[0])[-m_val:]) * T_vals_ / m_val
+                    best_rew['stream_' + str(st)]['arm_' + str(a)][i] += \
+                        np.mean(np.sort(arms_[0])[-m_val:]) * T_vals_ / totalPeriods_
 
                     # run the multiple simulations on different algorithms
                     for alg_keys in algs.keys():
@@ -179,9 +179,10 @@ def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
     start_ = time.time()
     armInstances_ = gA.generateRottingArms(K_list_[0], T_list_, numArmDists_, alpha__, beta__)
     print("Running rotting bandits")
-    naiveUCB1_ = fAR.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, pw_)
-    ADAETC_ = fAR.ADAETC(armInstances_, endSim_, K_list_, T_list_, pw_)
-    rotting_ = fAR.Rotting(armInstances_, endSim_, K_list_, T_list_, pw_,
+
+    fAR.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, pw_)
+    fAR.ADAETC(armInstances_, endSim_, K_list_, T_list_, pw_)
+    fAR.Rotting(armInstances_, endSim_, K_list_, T_list_, pw_,
                            sigma=1, deltaZero=2, alpha=0.1)
     print("took " + str(time.time() - start_) + " seconds; alpha " + str(alpha__) + ", beta " + str(beta__))
 
@@ -192,7 +193,7 @@ def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, numOpt_, generateIns_,
     start_ = time.time()
     res = init_res()
     delt = np.zeros(rng)
-    naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_ = 0, 0, 0, 0, 0, 0
+
     for i in range(rng):
         multi = 50 if justUCB == 'yes' else 1
         print('Iteration ', i)
@@ -261,7 +262,7 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
                 print("Single optimal arm with gap " + str(delt_))
             else:
                 print(str(numOpt_) + " opt arms, gap " + str(delt_))
-
+    naiveUCB1_, ADAETC_, ETC_, NADAETC_, UCB1_stopping_, SuccElim_, Switch_ = None, None, None, None, None, None, None
     if justUCB == 'no':
         ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
         ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
@@ -319,13 +320,13 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
 
 if __name__ == '__main__':
     K_list = np.array([2])
-    T_list = np.arange(1, 16) * 500  # np.arange(1, 3) * 250000  # np.array([100])  #
+    T_list = np.arange(1, 16) * 1000  # np.arange(1, 3) * 250000  # np.array([100])  #
     m = 2
     numArmDists = 25
     alpha_ = 0.4
     ucbPart = 2
-    endSim = 25
-    doing = 'm1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    endSim = 20
+    doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
         # market-like simulation

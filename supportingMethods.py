@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import fixedArms as fA
-import matplotlib.ticker as ticker
 
 
 def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):

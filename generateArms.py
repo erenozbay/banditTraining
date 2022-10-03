@@ -98,7 +98,6 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha_, numOptPerPer
                                                  alpha=alpha_, verbose=False)
             allArmInstances_[col_s:(col_s + int(K_list_[p]))] = np.array(armInstances_[str(p)])
             col_s += int(K_list_[p])
-        allArmInstances_ = np.sort(allArmInstances_)
     else:
         num = numOptPerPeriod
         allArmInstances_ = generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
