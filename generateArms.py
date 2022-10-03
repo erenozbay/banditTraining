@@ -89,22 +89,7 @@ def generateArms_fixedIntervals(K_list, T_list, numArmDists, verbose=True):
 def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha_, numOptPerPeriod):
     armInstances_ = {}
 
-    if numOptPerPeriod == 'one':
-        allArmInstances_ = generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
-                                        numArmDists=1, alpha=alpha_, verbose=False)
-        # get the top totalPeriods_-many arms, put them aside in top_m and shuffle the remaining arms
-        allArmInstances_ = np.sort(allArmInstances_[0])
-        top_m = allArmInstances_[-totalPeriods_:]
-        allArmInstances_ = allArmInstances_[:(int(sum(K_list_)) - totalPeriods_)]
-        np.random.shuffle(allArmInstances_)
-        np.random.shuffle(top_m)
-        col_s = 0
-        for p in range(totalPeriods_):
-            armInstances_[str(p)] = np.concatenate((top_m[p],
-                                                    allArmInstances_[col_s:(col_s + int(K_list_[p]) - 1)]),
-                                                   axis=None)
-            col_s += int(K_list_[p]) - 1
-    elif numOptPerPeriod == 'none':
+    if numOptPerPeriod == 'none':
         col_s = 0
         allArmInstances_ = np.zeros(int(sum(K_list_)))
         for p in range(totalPeriods_):
@@ -114,14 +99,12 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha_, numOptPerPer
             allArmInstances_[col_s:(col_s + int(K_list_[p]))] = np.array(armInstances_[str(p)])
             col_s += int(K_list_[p])
         allArmInstances_ = np.sort(allArmInstances_)
-        top_m = allArmInstances_[-totalPeriods_:]
     else:
         num = numOptPerPeriod
         allArmInstances_ = generateArms(K_list=np.array([sum(K_list_)]), T_list=np.array([sum(T_list_)]),
                                         numArmDists=1, alpha=alpha_, verbose=False)
         # get the top (totalPeriods_ * numOptPerPeriod)-many arms, put them aside and shuffle the remaining arms
         allArmInstances_ = np.sort(allArmInstances_[0])
-        top_m = allArmInstances_[-totalPeriods_:]
         top_numOpt = allArmInstances_[-int(num * totalPeriods_):]
         np.random.shuffle(top_numOpt)
         allArmInstances_ = allArmInstances_[:(int(sum(K_list_)) - int(num * totalPeriods_))]
@@ -133,4 +116,4 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha_, numOptPerPer
                                                    axis=None)
             col_s += int(K_list_[p]) - 1
 
-    return armInstances_
+    return {'arms': armInstances_}

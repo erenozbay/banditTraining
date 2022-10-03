@@ -13,13 +13,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     res = {}  # used to store the reward for each (K, T)-pair stream and algorithm
     resreg = {}  # used to store the regret for each (K, T)-pair stream and algorithm
     stdev = {}  # used to store the standard deviation of rewards for each (K, T)-pair stream and algorithm
-
-    for st in range(numStreams_):
-        res['stream_' + str(st)] = deepcopy(algs)
-        resreg['stream_' + str(st)] = deepcopy(algs)
-        stdev['stream_' + str(st)] = deepcopy(algs)
-        for keys in algs.keys():
-            res['stream_' + str(st)][keys]['best'] = {}
+    best_rew = {}  # used to store the best reward for each m value and instance
 
     # a single instance will run with multiple simulations
     # a single instance will have a fixed list of K and T for each period as well as arm means
@@ -44,16 +38,26 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
     # one of each to every period, and the rest of the arms required for the periods are placed randomly; or
     # (2) generate everything randomly
     for st in range(numStreams_):
+        res['stream_' + str(st)] = {}
+        resreg['stream_' + str(st)] = {}
+        stdev['stream_' + str(st)] = {}
+        best_rew['stream_' + str(st)] = {}
+
         K_list_ = np.array(K_list_stream[str(st)])
         T_list_ = np.array(T_list_stream[str(st)])
 
         for a in range(numArmDists_):
+            res['stream_' + str(st)]['arm_' + str(a)] = deepcopy(algs)
+            resreg['stream_' + str(st)]['arm_' + str(a)] = deepcopy(algs)
+            stdev['stream_' + str(st)]['arm_' + str(a)] = deepcopy(algs)
+            best_rew['stream_' + str(st)]['arm_' + str(a)] = np.zeros(len(m_vals_))
+
             if (a + 1) % 5 == 0:
                 print("Arm dist number ", str(a + 1), ", K&T stream number", str(st + 1), ", time ",
                       str(time.time() - start_), " from start.")
 
             # generate arm means, either each period has one optimal arm (across all periods) or no such arrangement
-            armInstances_ = gA.generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPeriod)
+            armInstances_ = gA.generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha__, numOptPerPeriod)['arms']
 
             # run multiple simulations for varying values of m
             # if m = 1, every period is run individually and ADA-ETC is called using corresponding (K, T) pair
@@ -65,9 +69,8 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
 
                 stdev_local = {}
                 for keys in algs.keys():
-                    res['stream_' + str(st)][keys]['m = ' + str(m_val)] = 0
-                    res['stream_' + str(st)][keys]['best']['m = ' + str(m_val)] = 0
-                    resreg['stream_' + str(st)][keys]['reg: m = ' + str(m_val)] = 0
+                    res['stream_' + str(st)]['arm_' + str(a)][keys]['m = ' + str(m_val)] = 0
+                    resreg['stream_' + str(st)]['arm_' + str(a)][keys]['reg: m = ' + str(m_val)] = 0
                     stdev_local[keys] = []
 
                 calls = int(totalPeriods_ / m_val)  # and this is 6 / 3 = 2, i.e., totalPeriods_ = 6
@@ -92,6 +95,10 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                         arms_[0, col_start:col_end] = armInstances_[str(int(indices[j]))]
                         col_start += int(K_list_[int(indices[j])])
 
+                    # get the best reward for this m value, and (K, T)-pair
+                    best_rew['stream_' + str(st)]['arm_' + str(a)][i] = \
+                        np.mean(np.sort(arms_[0])[-m_val:]) * T_vals_ / m_val
+
                     # run the multiple simulations on different algorithms
                     for alg_keys in algs.keys():
                         for t in range(endSim_):
@@ -102,35 +109,39 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
                             rew /= (calls * int(endSim_))
                             reg = run['regret'].item() / (calls * int(endSim_))
                             # .item() is used to get the value, not as a 1-dim array, i.e., fixing the type
-                            res['stream_' + str(st)][alg_keys]['m = ' + str(m_val)] += rew
-                            resreg['stream_' + str(st)][alg_keys]['reg: m = ' + str(m_val)] += reg
-                            res['stream_' + str(st)][alg_keys]['best']['m = ' + str(m_val)] += rew + reg
+                            res['stream_' + str(st)]['arm_' + str(a)][alg_keys]['m = ' + str(m_val)] += rew
+                            resreg['stream_' + str(st)]['arm_' + str(a)][alg_keys]['reg: m = ' + str(m_val)] += reg
 
                     # get the standard deviation on rewards
                     for alg_keys in algs.keys():
-                        stdev['stream_' + str(st)][alg_keys]['m = ' + str(m_val)] = \
+                        stdev['stream_' + str(st)]['arm_' + str(a)][alg_keys]['m = ' + str(m_val)] = \
                             np.sqrt(np.var(np.array(stdev_local[alg_keys])) / int(len(stdev_local[alg_keys])))
 
     # storing results for each algorithm for each m value, across different (K, T)-pair streams (if multiple)
-    rewards, stdevs, regrets, best_rews = deepcopy(algs), deepcopy(algs), deepcopy(algs), deepcopy(algs)
+    rewards, stdevs, regrets = deepcopy(algs), deepcopy(algs), deepcopy(algs)
+    best_rews_by_m = np.zeros(len(m_vals_))
+    normalizer = numArmDists_ * numStreams_
     for j in range(len(m_vals_)):
         m_val = m_vals_[j]
         for keys in algs.keys():
             rewards[keys]['m = ' + str(m_val)] = 0
             regrets[keys]['reg: m = ' + str(m_val)] = 0
             stdevs[keys]['m = ' + str(m_val)] = 0
-            best_rews[keys]['m = ' + str(m_val)] = 0
         for st in range(numStreams_):
-            for kys in algs.keys():
-                rewards[kys]['m = ' + str(m_val)] += res['stream_' + str(st)][kys]['m = ' + str(m_val)] / numStreams_
-                regrets[kys]['reg: m = ' + str(m_val)] += \
-                    resreg['stream_' + str(st)][kys]['reg: m = ' + str(m_val)] / numStreams_
-                stdevs[kys]['m = ' + str(m_val)] += stdev['stream_' + str(st)][kys]['m = ' + str(m_val)] / numStreams_
-                best_rews[kys]['m = ' + str(m_val)] += res['stream_' + str(st)][kys]['best']['m = ' + str(m_val)] / \
-                                                       numStreams_
+            for a in range(numArmDists_):
+                best_rews_by_m[j] += best_rew['stream_' + str(st)]['arm_' + str(a)][j] / normalizer
+                for kys in algs.keys():
+                    rewards[kys]['m = ' + str(m_val)] += \
+                        res['stream_' + str(st)]['arm_' + str(a)][kys]['m = ' + str(m_val)] / normalizer
+                    regrets[kys]['reg: m = ' + str(m_val)] += \
+                        resreg['stream_' + str(st)]['arm_' + str(a)][kys]['reg: m = ' + str(m_val)] / normalizer
+                    stdevs[kys]['m = ' + str(m_val)] += \
+                        stdev['stream_' + str(st)]['arm_' + str(a)][kys]['m = ' + str(m_val)] / np.sqrt(normalizer)
 
+    # used to pass the rewards and standard deviations to the plotting module as arrays
     alg_rews = {'ada': [], 'rada': [], 'etc': [], 'nada': [], 'ucb1s': [], 'ucb1': []}
     alg_stdevs = {'ada': [], 'rada': [], 'etc': [], 'nada': [], 'ucb1s': [], 'ucb1': []}
+
     # printing results for each algorithm
     print("numArmDist", numArmDists_, "; alpha", alpha__, "; sims", endSim_,
           "; meanK", meanK_, "; meanT", meanT_, "; numStreams", numStreams_)
@@ -139,7 +150,7 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
         print('--' * 20)
         print(keys + ' results ')
         print('Rewards:')
-        print('Best: ', best_rews['ada'])
+        print('Best: ', best_rews_by_m)
         for i in range(len(m_vals_)):
             rew = round(rewards[keys]['m = ' + str(m_vals_[i])], 5)
             print("m =", str(m_vals_[i]), ": ", rew)
@@ -157,14 +168,10 @@ def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
             print("m =", str(m_vals_[i]), ": ", reg)
 
     print("Done after ", str(round(time.time() - start_, 2)), " seconds from start.")
-    params_ = {'numOpt': numOptPerPeriod, 'alpha': alpha__, 'bestReward': best_rews['ada'].values(),
+    params_ = {'numOpt': numOptPerPeriod, 'alpha': alpha__, 'bestReward': best_rews_by_m,
                'numArmDists': numArmDists_, 'totalSim': endSim_}
 
     plot_marketSim(meanK_, meanT_, m_vals_, alg_rews, alg_stdevs, params_)
-
-    return {'result': res,
-            'regret': resreg,
-            'stDev': stdev}
 
 
 def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
@@ -178,12 +185,8 @@ def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
                            sigma=1, deltaZero=2, alpha=0.1)
     print("took " + str(time.time() - start_) + " seconds; alpha " + str(alpha__) + ", beta " + str(beta__))
 
-    return {'UCB1': naiveUCB1_,
-            'ADAETC': ADAETC_,
-            'Rotting': rotting_}
 
-
-def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ucbPart_, numOpt_, generateIns_,
+def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, numOpt_, generateIns_,
                     rng=11, ucbSim=True, justUCB='no'):
     print("Running m = 1, justUCB: " + justUCB)
     start_ = time.time()
@@ -208,9 +211,9 @@ def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ucbPart_, numOpt_, gener
             res = store_res(res, generateIns_, i, ADAETC_, 'ADAETC')
             ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
             res = store_res(res, generateIns_, i, ETC_, 'ETC')
-            NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
+            NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
             res = store_res(res, generateIns_, i, NADAETC_, 'NADAETC')
-            UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
+            UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_)
             res = store_res(res, generateIns_, i, UCB1_stopping_, 'UCB1-s')
             SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c=4)
             res = store_res(res, generateIns_, i, SuccElim_, 'SuccElim')
@@ -229,18 +232,10 @@ def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ucbPart_, numOpt_, gener
             plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
                                generateIns_, alpha__, numOpt_, UCBin, 'Reward')
 
-    return {'UCB1': naiveUCB1_,
-            'ADAETC': ADAETC_,
-            'ETC': ETC_,
-            'NADAETC': NADAETC_,
-            'UCB1-s': UCB1_stopping_,
-            'SuccElim': SuccElim_,
-            'fullRes': res}
 
-
-def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, ucbPart_, numOpt_, delt_,
-           plots=True, ucbSim=True, fixed='whatever', justUCB='no'):
-    print("Running m = 1, justUCB: " + justUCB)
+def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
+           plots=True, ucbSim=True, fixed='whatever', justUCB='no', Switch='no'):
+    print("Running m = 1, justUCB: " + justUCB + ", Switch: " + Switch)
     constant_c = 4
     start_ = time.time()
     if fixed == 'Gap':
@@ -267,36 +262,36 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, ucbPart_, numOpt_, 
             else:
                 print(str(numOpt_) + " opt arms, gap " + str(delt_))
 
-    # if justUCB == 'no':
-    ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
-    ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
-    NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_, ucbPart_)
-    UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, ucbPart_, orig=True)
-    SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
-    naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_) if ucbSim else ADAETC_
-    Switching_ = fA.Switching(armInstances_, endSim, K_list, T_list)
+    if justUCB == 'no':
+        ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+        ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
+        NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
+        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_)
+        SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
+    if ucbSim:
+        naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_)
+    if Switch == 'yes':
+        Switch_ = fA.Switching(armInstances_, endSim, K_list, T_list)
 
     print("took " + str(time.time() - start_) + " seconds")
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
-               'numArmDists': numArmDists_, 'c': constant_c, 'delta': delt_, 'm': 1, 'ucbPart': ucbPart_}
-
+               'numArmDists': numArmDists_, 'c': constant_c, 'delta': delt_, 'm': 1}
+    _ = None
     if plots:
         a = 0 if ucbSim else 1
-        for i in range(a, 2):
-            plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
-                         NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_)
-        if ucbSim:
+        if justUCB == 'no':
+            for i in range(a, 2):
+                plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
+                             NADAETC_, UCB1_stopping_, SuccElim_, Switch_, params_)
+        if ucbSim and (justUCB == 'no'):
             plot_fixed_m(3, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
-                         NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_)
-    return {'UCB1': naiveUCB1_,
-            'ADAETC': ADAETC_,
-            'ETC': ETC_,
-            'NADAETC': NADAETC_,
-            'UCB1-s': UCB1_stopping_,
-            'SuccElim': SuccElim_}
+                         NADAETC_, UCB1_stopping_, SuccElim_, Switch_, params_)
+        if Switch == 'yes':
+            plot_fixed_m(4, K_list_, T_list, naiveUCB1_, _, _, _, _, _, Switch_, params_)
+            plot_fixed_m(5, K_list_, T_list, naiveUCB1_, _, _, _, _, _, Switch_, params_)
 
 
-def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, ucbPart_, numOpt_, delt_):
+def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt_):
     print("Running m =", m_)
     start_ = time.time()
     if numOpt_ == 1:
@@ -309,34 +304,28 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, ucbPart_, num
     RADAETC_ = fA.RADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
     m_ADAETC_ = fA.m_ADAETC(armInstances_, endSim, K_list_, T_list_, m_)
     m_ETC_ = fA.m_ETC(armInstances_, endSim_, K_list_, T_list_, m_)
-    m_NADAETC_ = fA.m_NADAETC(armInstances_, endSim_, K_list_, T_list_, m_, ucbPart_)
-    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, ucbPart_, orig=True)
+    m_NADAETC_ = fA.m_NADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
+    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_)
     m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_)
     print("took " + str(time.time() - start_) + " seconds")
 
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
-               'numArmDists': numArmDists_, 'c': 1, 'delta': delt_, 'm': m_, 'ucbPart': ucbPart_}
+               'numArmDists': numArmDists_, 'c': 4, 'delta': delt_, 'm': m_}
 
     # first argument is set to 2 to use the general m plots
     plot_fixed_m(2, K_list_, T_list, m_naiveUCB1, m_ADAETC_, m_ETC_, m_NADAETC_, m_UCB1_stopping_, RADAETC_,
                  RADAETC_, params_)  # last RADAETC_ is for switching bandits
-    print("UCB part for NADA-ETC and UCB1-s is " + str(ucbPart_))
-    return {'RADAETC': RADAETC_,
-            'ADAETC': m_ADAETC_,
-            'ETC': m_ETC_,
-            'NADAETC': m_NADAETC_,
-            'UCB1-s': m_UCB1_stopping_}
 
 
 if __name__ == '__main__':
     K_list = np.array([2])
     T_list = np.arange(1, 16) * 500  # np.arange(1, 3) * 250000  # np.array([100])  #
     m = 2
-    numArmDists = 2
-    alpha_ = 0  # can be used for both
+    numArmDists = 25
+    alpha_ = 0.4
     ucbPart = 2
-    endSim = 2
-    doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    endSim = 25
+    doing = 'm1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
         # market-like simulation
@@ -347,23 +336,20 @@ if __name__ == '__main__':
         totalPeriods = 120
         m_vals = np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30, 40, 60, 120])
         # np.array([1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72])
-        market = marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals,
-                           alpha_, endSim, algs=algorithms, ucbPart_=ucbPart,
-                           numOptPerPeriod='none')  # or 'one' or any number
+        marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals, alpha_, endSim,
+                  algs=algorithms, ucbPart_=ucbPart, numOptPerPeriod='none')  # or any other integer
     elif doing == 'm1':
         # fixed mean rewards throughout, m = 1
-        # for j in range(5):
-        #     result = mEqOne(K_list, T_list, numArmDists, startSim, endSim, alpha_,
-        #                     ucbPart_=ucbPart, numOpt_=1, delt_=round(0.1 * (j + 1), 1), plots=True, fixedGap=False)
-        result = mEqOne(K_list, T_list, numArmDists, endSim, alpha_, ucbPart_=ucbPart,
-                        numOpt_=1, delt_=0, plots=True, ucbSim=True, fixed='no', justUCB='yes')
+        mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
+               numOpt_=1, delt_=0, plots=True, ucbSim=True, fixed='no', justUCB='yes', Switch='yes')
         # # fixed='Intervals' or 'Gap' or anything else
     elif doing == 'mGeq1':
         # fixed mean rewards throughout, m > 1
-        mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_, ucbPart_=ucbPart, numOpt_=3, delt_=0.3)
+        mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_,
+                 numOpt_=3, delt_=0.3)
     elif doing == 'm1bar':
         # fixed means but difference is specified between two best arms, varying difference between means, m = 1
-        mEqOne_barPlots(K_list, T_list, endSim, alpha_, ucbPart_=ucbPart,
+        mEqOne_barPlots(K_list, T_list, endSim, alpha_,
                         numOpt_=1, generateIns_=numArmDists, rng=11, ucbSim=True, justUCB='yes')
         # generateIns_ takes the place of running with multiple arm instances
         # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
@@ -374,5 +360,6 @@ if __name__ == '__main__':
         # If yes, the instances are so that the \Delta between arms govern the T
     elif doing == 'rott':
         # rotting bandits part
-        rotting(K_list, T_list, numArmDists, endSim, alpha_, beta__=0.01, pw_=1 / 2)
+        rotting(K_list, T_list, numArmDists, endSim, alpha_,
+                beta__=0.01, pw_=1 / 2)
         # larger pw means higher variance in mean changes
