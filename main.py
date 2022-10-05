@@ -6,7 +6,7 @@ from copy import deepcopy
 
 
 def marketSim(meanK_, meanT_, numArmDists_, numStreams_, totalPeriods_, m_vals_,
-              alpha__, endSim_, algs=None, ucbPart_=2, numOptPerPeriod='none'):
+              alpha__, endSim_, algs=None, ucbPart_=2, numOptPerPeriod=0):
     if algs is None:
         algs = {'ada': {}, 'rada': {}, 'nada': {}, 'ucb1s': {}, 'ucb1': {}, 'etc': {}}
     start_ = time.time()
@@ -323,7 +323,7 @@ if __name__ == '__main__':
     T_list = np.arange(1, 16) * 1000  # np.arange(1, 3) * 250000  # np.array([100])  #
     m = 2
     numArmDists = 25
-    alpha_ = 0.4
+    alpha_ = 0
     ucbPart = 2
     endSim = 20
     doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
@@ -338,7 +338,7 @@ if __name__ == '__main__':
         m_vals = np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30, 40, 60, 120])
         # np.array([1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72])
         marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals, alpha_, endSim,
-                  algs=algorithms, ucbPart_=ucbPart, numOptPerPeriod='none')  # or any other integer
+                  algs=algorithms, ucbPart_=ucbPart, numOptPerPeriod=2)  # or any other integer
     elif doing == 'm1':
         # fixed mean rewards throughout, m = 1
         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,

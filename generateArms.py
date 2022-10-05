@@ -89,7 +89,7 @@ def generateArms_fixedIntervals(K_list, T_list, numArmDists, verbose=True):
 def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha_, numOptPerPeriod):
     armInstances_ = {}
 
-    if numOptPerPeriod == 'none':
+    if numOptPerPeriod == 0:
         col_s = 0
         allArmInstances_ = np.zeros(int(sum(K_list_)))
         for p in range(totalPeriods_):
@@ -111,8 +111,8 @@ def generateArms_marketSim(K_list_, T_list_, totalPeriods_, alpha_, numOptPerPer
         col_s = 0
         for p in range(totalPeriods_):
             armInstances_[str(p)] = np.concatenate((top_numOpt[(p * num):((p + 1) * num)],
-                                                    allArmInstances_[col_s:(col_s + int(K_list_[p]) - 1)]),
+                                                    allArmInstances_[col_s:(col_s + int(K_list_[p]) - num)]),
                                                    axis=None)
-            col_s += int(K_list_[p]) - 1
+            col_s += int(K_list_[p]) - num
 
     return {'arms': armInstances_}

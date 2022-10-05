@@ -265,7 +265,8 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
 def plot_marketSim(K_, T_, m_vals_, rews, stdevs, params_):
     numOpt_, alpha__, bestRew = params_['numOpt'], params_['alpha'], params_['bestReward']
     numArmDist_, totSims_ = params_['numArmDists'], params_['totalSim']
-
+    if numOpt_ == 0:
+        numOpt_ = 'no'
     plt.figure(figsize=(7, 5), dpi=100)
     plt.rc('axes', axisbelow=True)
     plt.grid()
@@ -285,7 +286,7 @@ def plot_marketSim(K_, T_, m_vals_, rews, stdevs, params_):
     plt.xlabel('m', fontsize=13)
 
     plt.legend(loc="upper left", bbox_to_anchor=(1, 1.02))
-    plt.savefig('res/marketSim_' + str(numOpt_) + 'optArms_meanK' + str(K_) + '_meanT' + str(T_) + '_alpha' +
+    plt.savefig('res/marketSim_' + str(numOpt_) + 'OptArms_meanK' + str(K_) + '_meanT' + str(T_) + '_alpha' +
                 str(alpha__) + '_sim' + str(totSims_) + '_armDist' + str(numArmDist_) + '.eps',
                 format='eps', bbox_inches='tight')
 
