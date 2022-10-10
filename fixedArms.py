@@ -205,7 +205,7 @@ def m_naiveUCB1(armInstances, endSim, K_list, T_list, m, verbose=True):
 
         for a in range(numInstance):
             arms = armInstances[a, (t * K):((t + 1) * K)]
-            first_m = np.mean(arms[np.argsort(-arms)[0:m]])
+            first_m = np.mean(arms[np.argsort(-arms)[:m]])
 
             for j in range(endSim):
                 empirical_mean = np.zeros(K)
@@ -221,7 +221,7 @@ def m_naiveUCB1(armInstances, endSim, K_list, T_list, m, verbose=True):
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(capT) / pulls[pull])
                             pull += 1
                             if pull >= K:
                                 break
@@ -233,12 +233,12 @@ def m_naiveUCB1(armInstances, endSim, K_list, T_list, m, verbose=True):
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(capT) / pulls[pull])
 
                 cumreward_sim[a] += sum(cumulative_reward)
-                reward_sim[a] += -np.mean(np.sort(-cumulative_reward)[:m])
-                regret_sim[a] += first_m * int(capT / m) - reward_sim[a]
-                cumReg_sim[a] += first_m * int(capT / m) - cumreward_sim[a]
+                reward_sim[a] += np.mean(np.sort(cumulative_reward)[-m:])
+                regret_sim[a] += first_m * T - np.mean(np.sort(cumulative_reward)[-m:])
+                cumReg_sim[a] += first_m * T - sum(cumulative_reward)
 
             regret_sim[a] /= endSim
             cumreward_sim[a] /= endSim
@@ -362,7 +362,7 @@ def m_ETC(armInstances, endSim, K_list, T_list, m, verbose=True):
 
         for a in range(numInstance):
             arms = armInstances[a, (t * K):((t + 1) * K)]
-            first_m = np.mean(arms[np.argsort(-arms)[0:m]])
+            first_m = np.mean(arms[np.argsort(-arms)[:m]])
 
             for j in range(endSim):
                 empirical_mean = np.zeros(K)
@@ -375,7 +375,7 @@ def m_ETC(armInstances, endSim, K_list, T_list, m, verbose=True):
                     cumulative_reward[pull] += sum(np.random.binomial(1, arms[pull], pullEach))
                     empirical_mean[pull] = cumulative_reward[pull] / pullEach
 
-                pullset = np.argsort(-empirical_mean)[0:m]
+                pullset = np.argsort(-empirical_mean)[:m]
                 for i in range(m):
                     more_pull = int(np.floor((T - K * pullEach) / m))
                     cumulative_reward[pullset[i]] += sum(np.random.binomial(1, arms[pullset[i]], more_pull))

@@ -319,11 +319,11 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
 
 
 if __name__ == '__main__':
-    K_list = np.array([2])
-    T_list = np.arange(1, 16) * 1000  # np.arange(1, 3) * 250000  # np.array([100])  #
-    m = 2
+    K_list = np.array([20])
+    T_list = np.arange(1, 6) * 100  # np.arange(1, 3) * 250000  # np.array([100])  #
+    m = 5
     numArmDists = 25
-    alpha_ = 0
+    alpha_ = 0.4
     ucbPart = 2
     endSim = 20
     doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
@@ -338,16 +338,16 @@ if __name__ == '__main__':
         m_vals = np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24, 30, 40, 60, 120])
         # np.array([1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72])
         marketSim(meanK, meanT, numArmDists, numStreams, totalPeriods, m_vals, alpha_, endSim,
-                  algs=algorithms, ucbPart_=ucbPart, numOptPerPeriod=2)  # or any other integer
+                  algs=algorithms, ucbPart_=ucbPart, numOptPerPeriod=1)
     elif doing == 'm1':
         # fixed mean rewards throughout, m = 1
         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
-               numOpt_=1, delt_=0, plots=True, ucbSim=True, fixed='no', justUCB='yes', Switch='yes')
+               numOpt_=1, delt_=0, plots=True, ucbSim=False, fixed='no', justUCB='no', Switch='no')
         # # fixed='Intervals' or 'Gap' or anything else
     elif doing == 'mGeq1':
         # fixed mean rewards throughout, m > 1
         mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_,
-                 numOpt_=3, delt_=0.3)
+                 numOpt_=1, delt_=0.3)
     elif doing == 'm1bar':
         # fixed means but difference is specified between two best arms, varying difference between means, m = 1
         mEqOne_barPlots(K_list, T_list, endSim, alpha_,

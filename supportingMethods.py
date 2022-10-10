@@ -156,11 +156,11 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
     plt.rc('axes', axisbelow=True)
     plt.grid()
 
-    if i == 0:  # with UCB
+    if i == 0:  # with UCB, m=1
         plt.plot(T_list, naiveUCB1_['regret'], color='b', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
                      color='b', fmt='o', markersize=4, capsize=4)
-    if i < 2:  # without UCB
+    if i < 2:  # without UCB, m=1
         plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
                      color='r', fmt='o', markersize=4, capsize=4)
@@ -192,10 +192,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='m-UCB1-s')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, SuccElim_['regret'], color='blue', label='RADA-ETC')  # THIS IS RADA-ETC for this part
+        plt.plot(T_list, SuccElim_['regret'], color='purple', label='RADA-ETC')  # THIS IS RADA-ETC for this part
         plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
-                     color='blue', fmt='o', markersize=4, capsize=4)
-    if i == 3:  # cumulative regret plots
+                     color='purple', fmt='o', markersize=4, capsize=4)
+    if i == 3:  # cumulative regret plots for m=1
         plt.plot(T_list, naiveUCB1_['cumReg'], color='b', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError'],
                      color='b', fmt='o', markersize=4, capsize=4)
@@ -214,14 +214,14 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, SuccElim_['cumReg'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
         plt.errorbar(T_list, SuccElim_['cumReg'], yerr=SuccElim_['standardError'],
                      color='purple', fmt='o', markersize=4, capsize=4)
-    if i == 4:
+    if i == 4:  # only for UCB1 and Switching bandits
         plt.plot(T_list, naiveUCB1_['regret'], color='blue', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
                      color='blue', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, Switching_['regret'], color='mediumseagreen', label='Switch')
         plt.errorbar(T_list, Switching_['regret'], yerr=Switching_['standardError'],
                      color='mediumseagreen', fmt='o', markersize=4, capsize=4)
-    if i == 5:  # cumulative regret plots
+    if i == 5:  # only for UCB1 and Switching bandits, cumulative regret plots
         plt.plot(T_list, naiveUCB1_['cumReg'], color='blue', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError'],
                      color='blue', fmt='o', markersize=4, capsize=4)
