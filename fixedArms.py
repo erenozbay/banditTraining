@@ -170,7 +170,7 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, verbose=True):
         print(slower_v_fasterArmUCB)
         print()
         print(slower_v_fasterArmUCB_sim)
-        print()
+        print("="*50)
     return {'reward': reward,
             'cumreward': cumreward,
             'cumReg': cumReg,
@@ -928,7 +928,7 @@ def m_NADAETC(armInstances, endSim, K_list, T_list, m, ucbPart=2, verbose=True):
             'standardError': stError}
 
 
-def UCB1_stopping(armInstances, endSim, K_list, T_list, ucbPart=2, orig=True, verbose=True):
+def UCB1_stopping(armInstances, endSim, K_list, T_list, ucbPart=2, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -971,7 +971,7 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, ucbPart=2, orig=True, ve
                         pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
                                           ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
-                        lowBool = (not orig) or pullBool
+                        lowBool = pullBool
                         indexlow[pull] = empirical_mean[pull] - \
                                          ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * lowBool
                     else:
@@ -983,7 +983,7 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, ucbPart=2, orig=True, ve
                         pullBool = pullEach > pulls[pull]
                         indexhigh[pull] = empirical_mean[pull] + \
                                           ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
-                        lowBool = (not orig) or pullBool
+                        lowBool = pullBool
                         indexlow[pull] = empirical_mean[pull] - \
                                          ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * lowBool
 
@@ -1040,7 +1040,7 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, ucbPart=2, orig=True, ve
             'standardError': stError}
 
 
-def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, ucbPart=2, orig=False, verbose=True):
+def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, ucbPart=2, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -1079,7 +1079,7 @@ def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, ucbPart=2, orig=Fal
                             pullBool = pullEach > pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
                                               ucbPart * np.sqrt(np.log(T) / pulls[pull]) * pullBool
-                            lowBool = (not orig) or pullBool
+                            lowBool = pullBool
                             indexlow[pull] = empirical_mean[pull] - \
                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * lowBool
                             pull += 1
@@ -1096,7 +1096,7 @@ def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, ucbPart=2, orig=Fal
                             pullBool = pullEach > pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
                                               ucbPart * np.sqrt(np.log(T) / pulls[pull]) * pullBool
-                            lowBool = (not orig) or pullBool
+                            lowBool = pullBool
                             indexlow[pull] = empirical_mean[pull] - \
                                              ucbPart * np.sqrt(np.log(T) / pulls[pull]) * lowBool
 
@@ -1288,7 +1288,6 @@ def Switching(armInstances, endSim, K_list, T_list, verbose=True):
                 cumulative_reward = np.zeros(K)
                 delta = 1 / capT if capT == T else np.power(K / T, 1 / 3)
                 bb, c1, c2 = 2, 1 / 2, 1
-                largestPull = 0
 
                 for i in range(stage):
                     upperC = np.sqrt(c2 * (bb / c1) * (K / np.power(capT, (1 - np.power(1 / 2, i)))) *
@@ -1316,12 +1315,11 @@ def Switching(armInstances, endSim, K_list, T_list, verbose=True):
                 if int(T - sum(pulls)) > 0:
                     cumulative_reward[pull_arm] += sum(np.random.binomial(1, arms[pull_arm], int(T - sum(pulls))))
                     pulls[pull_arm] += int(T - sum(pulls))
-                    largestPull = pulls[pull_arm]
 
                 reward_sim[a] += max(cumulative_reward)
                 cumreward_sim[a] += sum(cumulative_reward)
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
-                subOptRewards_sim[a] += (largestPull / T)
+                subOptRewards_sim[a] += (max(pulls) / T)
                 cumReg_sim[a] += max(arms) * T - sum(cumulative_reward)
                 stError_perSim[j] = max(arms) * T - max(cumulative_reward)
 

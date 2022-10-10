@@ -301,13 +301,13 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
         armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, numArmDists_, alpha__,
                                                    numOpt_, delt_, verbose=False)
         print(str(numOpt_) + ' optimal arms')
-    print("Running m =", m_)
-    RADAETC_ = fA.RADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
+
+    m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_)
     m_ADAETC_ = fA.m_ADAETC(armInstances_, endSim, K_list_, T_list_, m_)
+    RADAETC_ = fA.RADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
     m_ETC_ = fA.m_ETC(armInstances_, endSim_, K_list_, T_list_, m_)
     m_NADAETC_ = fA.m_NADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
     m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_)
-    m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_)
     print("took " + str(time.time() - start_) + " seconds")
 
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
@@ -315,18 +315,18 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
 
     # first argument is set to 2 to use the general m plots
     plot_fixed_m(2, K_list_, T_list, m_naiveUCB1, m_ADAETC_, m_ETC_, m_NADAETC_, m_UCB1_stopping_, RADAETC_,
-                 RADAETC_, params_)  # last RADAETC_ is for switching bandits
+                 None, params_)  # last RADAETC_ is for switching bandits
 
 
 if __name__ == '__main__':
-    K_list = np.array([20])
+    K_list = np.array([4])
     T_list = np.arange(1, 6) * 100  # np.arange(1, 3) * 250000  # np.array([100])  #
-    m = 5
-    numArmDists = 25
-    alpha_ = 0.4
+    m = 2
+    numArmDists = 250
+    alpha_ = 0
     ucbPart = 2
-    endSim = 20
-    doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    endSim = 100
+    doing = 'mGeq1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
     if doing == 'market':
         # market-like simulation
@@ -342,7 +342,7 @@ if __name__ == '__main__':
     elif doing == 'm1':
         # fixed mean rewards throughout, m = 1
         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
-               numOpt_=1, delt_=0, plots=True, ucbSim=False, fixed='no', justUCB='no', Switch='no')
+               numOpt_=1, delt_=0, plots=True, ucbSim=True, fixed='no', justUCB='yes', Switch='yes')
         # # fixed='Intervals' or 'Gap' or anything else
     elif doing == 'mGeq1':
         # fixed mean rewards throughout, m > 1

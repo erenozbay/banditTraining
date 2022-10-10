@@ -233,7 +233,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
     plt.ylabel('Regret', fontsize=15) if i != 3 else plt.ylabel('Cumulative Regret', fontsize=15)
     plt.xlabel('T', fontsize=15)
 
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left") if i < 4 else plt.legend(loc="upper left", prop={'size': 15})
     if i == 0:  # with UCB, m = 1
         plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
                     '_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +
