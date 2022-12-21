@@ -413,8 +413,8 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts):
     armsGenerated = gA.generateArms(K_list=makesACohort, T_list=1, numArmDists=maxCohorts, alpha=0)
 
     # put all the arms into the cohorts
-    allCohorts = [CohortGenerator(cohortNum=i, armList=armsGenerated[i, :],
-                                  K=K, T=T, m=m_cohort) for i in range(maxCohorts)]
+    allCohorts = [CohortGenerator(cohortNum=i, armList=armsGenerated[i, :], K=makesACohort,
+                                  T=int(T * makesACohort / K), m=m_cohort) for i in range(maxCohorts)]
 
     for i in range(totalPeriods):
         for j in range(len(toBeDeactivatedCohorts)):
@@ -433,14 +433,27 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts):
         queuedActiveCohorts[i] = len(activeCohorts)
         # do job assignments within active cohorts
         for j in range(len(activeCohorts)):
-            if numJobs >= m:
+            if numJobs >= m_cohort:
                 inProgress = allCohorts[activeCohorts[j]].ADAETC(budget=m_cohort)
                 if inProgress['done']:
                     graduatedActiveCohorts[i] += 1  # keep track of the deactivated/graduated cohort
                     rewardOfCohort[j] = inProgress['reward']
-                numJobs -= m
+                numJobs -= m_cohort
 
         queuedJobs[i] = numJobs  # number of jobs waiting for workers
 
-
+    print("Queued jobs (by time) ", end=" ")
+    print(queuedJobs)
+    print("=" * 25)
+    print("Cohort rewards (by cohort) ", end=" ")
+    print(rewardOfCohort)
+    print("=" * 25)
+    print("Active cohorts (by time) ", end=" ")
+    print(queuedActiveCohorts)
+    print("=" * 25)
+    print("Total workers arrived ", end=" ")
+    print(numWorkersArrived)
+    print("=" * 25)
+    print("Graduated cohorts (by time) ", end=" ")
+    print(graduatedActiveCohorts)
 
