@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import fixedArms as fA
+import generateArms as gA
 
 
-def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
+def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, pullDiv, alg):
     output = {'reward': -1e8, 'regret': 1e8}
     if m_ == 1:
         if alg == 'ada' or alg == 'rada':
@@ -11,12 +12,11 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
         elif alg == 'nada':
             output = fA.NADAETC(armMeansArray_, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
         elif alg == 'ucb1s':
-            output = fA.UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, ucbPart_,
-                                              orig=True, verbose=False)
+            output = fA.UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
         elif alg == 'ucb1':
             output = fA.naiveUCB1(armMeansArray_, 1, arrayK_, arrayT_, verbose=False)
         elif alg == 'etc':
-            output = fA.ETC(armMeansArray_, 1, arrayK_, arrayT_, verbose=False)
+            output = fA.ETC(armMeansArray_, 1, arrayK_, arrayT_, verbose=False, pullDiv=pullDiv)
     else:
         if alg == 'ada':
             output = fA.m_ADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
@@ -25,12 +25,11 @@ def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, alg):
         elif alg == 'nada':
             output = fA.m_NADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
         elif alg == 'ucb1s':
-            output = fA.m_UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, m_, ucbPart_,
-                                                  orig=True, verbose=False)
+            output = fA.m_UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
         elif alg == 'ucb1':
             output = fA.m_naiveUCB1(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
         elif alg == 'etc':
-            output = fA.m_ETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
+            output = fA.m_ETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False, pullDiv=pullDiv)
     reward = output['reward']
     regret = output['regret']
     return {'reward': reward, 'regret': regret}
@@ -146,13 +145,13 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
 
 def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
                  NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_):
-    numOpt_, alpha__, totSims_ = params_['numOpt'], params_['alpha'], params_['totalSim']
+    numOpt_, alpha__, totSims_, Switch_do = params_['numOpt'], params_['alpha'], params_['totalSim'], params_['Switch']
     numArmDists_, constant_c, delt_, m_ = params_['numArmDists'], params_['c'], params_['delta'], params_['m']
 
     if len(T_list) <= 10:
         plt.figure(figsize=(7, 5), dpi=100)
     else:
-        plt.figure(figsize=(12, 8.5), dpi=100)
+        plt.figure(figsize=(14, 10), dpi=100)
     plt.rc('axes', axisbelow=True)
     plt.grid()
 
@@ -218,19 +217,27 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, naiveUCB1_['regret'], color='blue', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
                      color='blue', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, Switching_['regret'], color='mediumseagreen', label='Switch')
-        plt.errorbar(T_list, Switching_['regret'], yerr=Switching_['standardError'],
-                     color='mediumseagreen', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
+        plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
+                     color='r', fmt='o', markersize=4, capsize=4)
+        if Switch_do == 'yes':
+            plt.plot(T_list, Switching_['regret'], color='mediumseagreen', label='Switch')
+            plt.errorbar(T_list, Switching_['regret'], yerr=Switching_['standardError'],
+                         color='mediumseagreen', fmt='o', markersize=4, capsize=4)
     if i == 5:  # only for UCB1 and Switching bandits, cumulative regret plots
         plt.plot(T_list, naiveUCB1_['cumReg'], color='blue', label='UCB1')
-        plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError'],
+        plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError_cumReg'],
                      color='blue', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, Switching_['cumReg'], color='mediumseagreen', label='Switch')
-        plt.errorbar(T_list, Switching_['cumReg'], yerr=Switching_['standardError'],
-                     color='mediumseagreen', fmt='o', markersize=4, capsize=4)
+        plt.plot(T_list, ADAETC_['cumReg'], color='r', label='ADA-ETC')
+        plt.errorbar(T_list, ADAETC_['cumReg'], yerr=ADAETC_['standardError_cumReg'],
+                     color='r', fmt='o', markersize=4, capsize=4)
+        if Switch_do == 'yes':
+            plt.plot(T_list, Switching_['cumReg'], color='mediumseagreen', label='Switch')
+            plt.errorbar(T_list, Switching_['cumReg'], yerr=Switching_['standardError_cumReg'],
+                         color='mediumseagreen', fmt='o', markersize=4, capsize=4)
 
     plt.xticks(T_list)
-    plt.ylabel('Regret', fontsize=15) if i != 3 else plt.ylabel('Cumulative Regret', fontsize=15)
+    plt.ylabel('Regret', fontsize=15) if i != 3 and i != 5 else plt.ylabel('Cumulative Regret', fontsize=15)
     plt.xlabel('T', fontsize=15)
 
     plt.legend(loc="upper left") if i < 4 else plt.legend(loc="upper left", prop={'size': 15})
@@ -291,3 +298,149 @@ def plot_marketSim(K_, T_, m_vals_, rews, stdevs, params_):
                 format='eps', bbox_inches='tight')
 
     plt.cla()
+
+
+class CohortGenerator:
+    def __init__(self, cohortNum, armList, K, T, m):
+        self.cohortNum = cohortNum
+        self.generated = False
+        self.K = K
+        self.T = T
+        self.m = m
+        self.arms = armList
+        self.pulls = np.zeros(self.K)
+        self.indexhigh = np.zeros(self.K)
+        self.indexlow = np.zeros(self.K)
+        self.empirical_mean = np.zeros(self.K)
+        self.cumulative_reward = np.zeros(self.K)
+        self.pullEach = int(np.ceil(np.power(T / (K - m), 2 / 3))) if m > 1 else int(np.ceil(np.power(T / K, 2 / 3)))
+        self.exploitPhase = False
+        self.stopped = 0
+        self.pullset = np.zeros(m)
+
+    def Exploit(self):
+        lcb_set = np.argsort(-self.indexlow)
+        lcb = lcb_set[self.m - 1]
+        indexhigh_copy = self.indexhigh.copy()
+        indexhigh_copy[lcb_set[0:self.m]] = -1  # make sure that correct arms are excluded from max UCB step
+        ucb = np.argsort(-indexhigh_copy)[0]
+        pullset = lcb_set[0:self.m]
+        if (self.indexlow[lcb] > self.indexhigh[ucb]) or ((self.indexlow[lcb] >= self.indexhigh[ucb])
+                                                          and sum(self.pulls) > self.K):
+            self.stopped = int(sum(self.pulls) / self.m)
+            self.exploitPhase = True
+            self.pullset = pullset
+
+    def ADAETC(self, budget):
+        done = False
+        if not self.exploitPhase:  # do not check if I am in the exploitation phase after I get in it
+            if any(self.pulls < 1):
+                for i in range(self.K):
+                    if self.pulls[i] == 0:
+                        budget -= 1
+                        pull = i
+                        rew = np.random.binomial(1, self.arms[pull], 1)
+                        self.cumulative_reward[pull] += rew
+                        self.pulls[pull] += 1
+                        self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
+                        up = 2 * np.sqrt(
+                            max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
+                        self.indexhigh[pull] = self.empirical_mean[pull] + up * (self.pullEach > self.pulls[pull])
+                        self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * (
+                                    self.pullEach > self.pulls[pull])
+                    if budget <= 0:
+                        break
+            if budget >= self.m:  # I want to pull m arms at all times, not anything less
+                pullset = np.argsort(-self.indexhigh)
+                for b in range(self.m):
+                    pull = pullset[b]
+                    rew = np.random.binomial(1, self.arms[pull], 1)
+                    self.cumulative_reward[pull] += rew
+                    self.pulls[pull] += 1
+                    self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
+                    up = 2 * np.sqrt(
+                        max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
+                    self.indexhigh[pull] = self.empirical_mean[pull] + up * (self.pullEach > self.pulls[pull])
+                    self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * (
+                                self.pullEach > self.pulls[pull])
+                self.Exploit()   # check if I can exploit the next time
+
+        else:  # already in the exploitation phase
+            for b in range(self.m):
+                pull = self.pullset[b]
+                rew = np.random.binomial(1, self.arms[pull], 1)
+                self.cumulative_reward[pull] += rew
+                self.pulls[pull] += 1
+                self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
+                up = 2 * np.sqrt(
+                    max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
+                self.indexhigh[pull] = self.empirical_mean[pull] + up * (self.pullEach > self.pulls[pull])
+                self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * (
+                        self.pullEach > self.pulls[pull])
+            done = True if (self.T - sum(self.pulls) < self.m) else False
+
+        return {'budget': budget, # this budget I can use to return to the pool of jobs, maybe?
+                'done': done,
+                'reward': np.mean(self.cumulative_reward[self.pullset])}
+
+
+
+def DynamicMarketSim(m, K, T, m_cohort, totalCohorts):
+    # m_cohort is what I use to mean how many arms will come out of a cohort
+    # e.g., if K = 20, m = 5, and m_cohort = 1, then every 4 arm will make a cohort and ultimate reward will be
+    # all rewards averaged and divided by 5. If m_cohort = 1, ult. reward is all rewards averaged.
+    totalPeriods = totalCohorts * T
+    workerArrProb = (K / T)
+    makesACohort = int(m_cohort * int(K / m))  # how many workers make a cohort
+    generateCohorts = 0  # used to "generate" the next ready cohort
+    queuedActiveCohorts = np.zeros(totalPeriods)  # records all active cohort in the current period
+    graduatedActiveCohorts = np.zeros(totalPeriods)  # records all to be deactivated cohorts at the end of this period
+    queuedJobs = np.zeros(totalPeriods)  # records all the jobs in a period
+
+    # arrivals stored here
+    numJobs = 0  # keeps track of the number of available jobs at the beginning of a period
+    numWorkersArrived = 0  # keeps track of the cumulated workers arrived
+    workerArrival = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
+
+    # generate all arms
+    numAllArms = workerArrProb * np.power(totalPeriods, 1.5)  # room for extra arms in case more than planned shows up
+    maxCohorts = int(numAllArms / makesACohort)
+    rewardOfCohort = np.zeros(maxCohorts)  # keeps track of the reward due to each cohort
+    activeCohorts = []  # list of all active cohorts, chronologically ordered
+    toBeDeactivatedCohorts = []  # cohorts that will be deactivated at the beginning of the next period
+
+    # generate the arms, single row contains the arms that will be in a single cohort
+    armsGenerated = gA.generateArms(K_list=makesACohort, T_list=1, numArmDists=maxCohorts, alpha=0)
+
+    # put all the arms into the cohorts
+    allCohorts = [CohortGenerator(cohortNum=i, armList=armsGenerated[i, :],
+                                  K=K, T=T, m=m_cohort) for i in range(maxCohorts)]
+
+    for i in range(totalPeriods):
+        for j in range(len(toBeDeactivatedCohorts)):
+            # remove a deactivated cohort, the oldest cohort should deactivate first
+            activeCohorts.remove(toBeDeactivatedCohorts[j])
+        numJobs += 1
+        numWorkersArrived += workerArrival[i]
+        # check if enough workers have arrived for the next cohort
+        nextCohort = True if numWorkersArrived % makesACohort == 0 else False
+        # if so, generate and activate the next cohort
+        if nextCohort:
+            allCohorts[generateCohorts].generated = True  # not using this, just there
+            activeCohorts.append(generateCohorts)
+            generateCohorts += 1
+
+        queuedActiveCohorts[i] = len(activeCohorts)
+        # do job assignments within active cohorts
+        for j in range(len(activeCohorts)):
+            if numJobs >= m:
+                inProgress = allCohorts[activeCohorts[j]].ADAETC(budget=m_cohort)
+                if inProgress['done']:
+                    graduatedActiveCohorts[i] += 1  # keep track of the deactivated/graduated cohort
+                    rewardOfCohort[j] = inProgress['reward']
+                numJobs -= m
+
+        queuedJobs[i] = numJobs  # number of jobs waiting for workers
+
+
+
