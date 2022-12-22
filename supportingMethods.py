@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import fixedArms as fA
 import generateArms as gA
+import pandas as pd
 
 
 def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, pullDiv, alg):
@@ -317,6 +318,7 @@ class CohortGenerator:
         self.exploitPhase = False
         self.stopped = 0
         self.pullset = np.zeros(m)
+        self.currentReward = 0
 
     def Exploit(self):
         lcb_set = np.argsort(-self.indexlow)
@@ -333,6 +335,7 @@ class CohortGenerator:
 
     def ADAETC(self, budget):
         done = False
+        self.currentReward = 0
         if not self.exploitPhase:  # do not check if I am in the exploitation phase after I get in it
             if any(self.pulls < 1):
                 for i in range(self.K):
@@ -340,6 +343,7 @@ class CohortGenerator:
                         budget -= 1
                         pull = i
                         rew = np.random.binomial(1, self.arms[pull], 1)
+                        self.currentReward += rew
                         self.cumulative_reward[pull] += rew
                         self.pulls[pull] += 1
                         self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
@@ -355,6 +359,7 @@ class CohortGenerator:
                 for b in range(self.m):
                     pull = pullset[b]
                     rew = np.random.binomial(1, self.arms[pull], 1)
+                    self.currentReward += rew
                     self.cumulative_reward[pull] += rew
                     self.pulls[pull] += 1
                     self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
@@ -365,10 +370,15 @@ class CohortGenerator:
                                 self.pullEach > self.pulls[pull])
                 self.Exploit()   # check if I can exploit the next time
 
+            return {'budget': budget,  # this budget I can use to return to the pool of jobs, maybe?
+                    'done': done,
+                    'realtime_reward': self.currentReward}
+
         else:  # already in the exploitation phase
             for b in range(self.m):
                 pull = self.pullset[b]
                 rew = np.random.binomial(1, self.arms[pull], 1)
+                self.currentReward += rew
                 self.cumulative_reward[pull] += rew
                 self.pulls[pull] += 1
                 self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
@@ -379,81 +389,131 @@ class CohortGenerator:
                         self.pullEach > self.pulls[pull])
             done = True if (self.T - sum(self.pulls) < self.m) else False
 
-        return {'budget': budget, # this budget I can use to return to the pool of jobs, maybe?
-                'done': done,
-                'reward': np.mean(self.cumulative_reward[self.pullset])}
+            return {'budget': budget,
+                    'done': done,
+                    'final_reward': np.mean(self.cumulative_reward[self.pullset]),
+                    'realtime_reward': self.currentReward / self.m}
 
 
 
-def DynamicMarketSim(m, K, T, m_cohort, totalCohorts):
+def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, roomForError=1):
     # m_cohort is what I use to mean how many arms will come out of a cohort
     # e.g., if K = 20, m = 5, and m_cohort = 1, then every 4 arm will make a cohort and ultimate reward will be
     # all rewards averaged and divided by 5. If m_cohort = 1, ult. reward is all rewards averaged.
     totalPeriods = totalCohorts * T
     workerArrProb = (K / T)
     makesACohort = int(m_cohort * int(K / m))  # how many workers make a cohort
-    generateCohorts = 0  # used to "generate" the next ready cohort
-    queuedActiveCohorts = np.zeros(totalPeriods)  # records all active cohort in the current period
-    graduatedActiveCohorts = np.zeros(totalPeriods)  # records all to be deactivated cohorts at the end of this period
-    queuedJobs = np.zeros(totalPeriods)  # records all the jobs in a period
+    generateCohorts = 0  # index used to "generate" the next ready cohort
+    queuedActiveCohorts = np.zeros(totalPeriods + 1)  # records all active cohort in the beginning of a period
+    graduatedActiveCohorts = np.zeros(totalPeriods + 1)  # records cumulative # deactivated cohorts at the end of a period
+    queuedJobs = np.zeros(totalPeriods + 1)  # records all the leftover jobs in a period
+    usedJobs = np.zeros(totalPeriods + 1)  # records all the used jobs in a period
+    rewardGenerated = np.zeros(totalPeriods + 1)  # records the reward generated in each time period
+    lastDeactivatedCohort = 0  # records the index of the last deactivated cohort
+    print(makesACohort, " makes a cohort. Decreasing allocated jobs per cohort by", roomForError)
 
-    # arrivals stored here
     numJobs = 0  # keeps track of the number of available jobs at the beginning of a period
     numWorkersArrived = 0  # keeps track of the cumulated workers arrived
     workerArrival = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
 
     # generate all arms
-    numAllArms = workerArrProb * np.power(totalPeriods, 1.5)  # room for extra arms in case more than planned shows up
+    numAllArms = int(workerArrProb * totalPeriods * 1.1)  # room for extra arms in case more than planned shows up
     maxCohorts = int(numAllArms / makesACohort)
     rewardOfCohort = np.zeros(maxCohorts)  # keeps track of the reward due to each cohort
     activeCohorts = []  # list of all active cohorts, chronologically ordered
     toBeDeactivatedCohorts = []  # cohorts that will be deactivated at the beginning of the next period
+    cohortComingsAndGoings = np.zeros((maxCohorts, 4))  # records when a cohort gets activated and deactivated
 
     # generate the arms, single row contains the arms that will be in a single cohort
-    armsGenerated = gA.generateArms(K_list=makesACohort, T_list=1, numArmDists=maxCohorts, alpha=0)
+    print("An instance sample", end=" ")
+    armsGenerated = gA.generateArms(K_list=[makesACohort], T_list=[1], numArmDists=maxCohorts, alpha=0)
 
     # put all the arms into the cohorts
     allCohorts = [CohortGenerator(cohortNum=i, armList=armsGenerated[i, :], K=makesACohort,
-                                  T=int(T * makesACohort / K), m=m_cohort) for i in range(maxCohorts)]
+                                  T=int(T * makesACohort / K * roomForError), m=m_cohort) for i in range(maxCohorts)]
 
     for i in range(totalPeriods):
         for j in range(len(toBeDeactivatedCohorts)):
             # remove a deactivated cohort, the oldest cohort should deactivate first
             activeCohorts.remove(toBeDeactivatedCohorts[j])
+
+        toBeDeactivatedCohorts = []
         numJobs += 1
         numWorkersArrived += workerArrival[i]
+
         # check if enough workers have arrived for the next cohort
-        nextCohort = True if numWorkersArrived % makesACohort == 0 else False
+        nextCohort = True if numWorkersArrived == makesACohort else False
         # if so, generate and activate the next cohort
         if nextCohort:
+            numWorkersArrived = 0
             allCohorts[generateCohorts].generated = True  # not using this, just there
             activeCohorts.append(generateCohorts)
+            cohortComingsAndGoings[generateCohorts, :] = np.array([generateCohorts, i, 0, 0])
             generateCohorts += 1
 
-        queuedActiveCohorts[i] = len(activeCohorts)
+        queuedActiveCohorts[i] = len(activeCohorts)  # note the active cohort during period i
+        graduatedActiveCohorts[i] = max(graduatedActiveCohorts)
         # do job assignments within active cohorts
         for j in range(len(activeCohorts)):
             if numJobs >= m_cohort:
                 inProgress = allCohorts[activeCohorts[j]].ADAETC(budget=m_cohort)
+                rewardGenerated[i] += inProgress['realtime_reward']
                 if inProgress['done']:
-                    graduatedActiveCohorts[i] += 1  # keep track of the deactivated/graduated cohort
-                    rewardOfCohort[j] = inProgress['reward']
-                numJobs -= m_cohort
+                    graduatedActiveCohorts[i] += 1  # keep track of the cumulative deactivated/graduated cohorts
+                    rewardOfCohort[activeCohorts[j]] = inProgress['final_reward']
+                    toBeDeactivatedCohorts.append(activeCohorts[j])  # graduated cohort will be deactivated
+                    lastDeactivatedCohort = activeCohorts[j]
+                    cohortComingsAndGoings[activeCohorts[j], 2] = i
+                numJobs -= m_cohort  # deduct the number of jobs used
+                usedJobs[i] += m_cohort
 
-        queuedJobs[i] = numJobs  # number of jobs waiting for workers
 
-    print("Queued jobs (by time) ", end=" ")
-    print(queuedJobs)
+        queuedJobs[i] = numJobs  # number of jobs idly waiting for workers
+    for j in range(len(toBeDeactivatedCohorts)):
+        # remove a deactivated cohort, the oldest cohort should deactivate first
+        activeCohorts.remove(toBeDeactivatedCohorts[j])
+    queuedActiveCohorts[totalPeriods] = len(activeCohorts)
+
+    # NEED TO CHART THESE THINGS PROPERLY
+    plt.plot(range(totalPeriods), queuedActiveCohorts[:-1],
+             color='b', label='Active Cohorts', linestyle='--')
+    plt.ylabel('Number of Cohorts', fontsize=13)
+    plt.xlabel('Time', fontsize=13)
+    plt.show()
+
+    plt.plot(range(totalPeriods), queuedJobs[:-1],
+             color='b', label='Queued Jobs', linestyle='--')
+    plt.ylabel('Number of Jobs', fontsize=13)
+    plt.xlabel('Time', fontsize=13)
+    plt.show()
+
+    pd.DataFrame(np.column_stack((np.transpose(queuedJobs), np.transpose(usedJobs), np.transpose(rewardGenerated),
+                                  np.transpose(queuedActiveCohorts), np.transpose(graduatedActiveCohorts))),
+                 columns=['In Queue Jobs', 'Used Jobs', 'Reward Generated', 'Active Cohorts',
+                          'Graduated Cohorts']).to_csv("timeDeps.csv", index=False)
+    cohortComingsAndGoings[:, 3] = cohortComingsAndGoings[:, 2] - cohortComingsAndGoings[:, 1] + 1
+    pd.DataFrame(cohortComingsAndGoings,
+                 columns=['Index', 'Activated', 'Deactivated', 'Life']).to_csv("cohortMoves.csv", index=False)
     print("=" * 25)
-    print("Cohort rewards (by cohort) ", end=" ")
-    print(rewardOfCohort)
+    print("Queued jobs (by time) ", end=" ")
+    print(queuedJobs[:-1].astype(int))
+    print("=" * 25)
+    print("Used jobs (by time) ", end=" ")
+    print(usedJobs[:-1])
     print("=" * 25)
     print("Active cohorts (by time) ", end=" ")
     print(queuedActiveCohorts)
     print("=" * 25)
-    print("Total workers arrived ", end=" ")
-    print(numWorkersArrived)
-    print("=" * 25)
     print("Graduated cohorts (by time) ", end=" ")
-    print(graduatedActiveCohorts)
+    print(graduatedActiveCohorts[:-1])
+    print("=" * 25)
+    print("Total cohorts graduated ", end=" ")
+    print(graduatedActiveCohorts[-2])
+    print("=" * 25)
+    print("Total workers arrived ", end=" ")
+    print(sum(workerArrival[:totalPeriods]))
+    print("=" * 25)
+    # pd.set_option('display.max_columns', None)
+    # print("Cohort rewards (by cohort) ", end=" ")
+    # print(rewardOfCohort[:lastDeactivatedCohort])
 
