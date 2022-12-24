@@ -151,8 +151,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
 
     if len(T_list) <= 10:
         plt.figure(figsize=(7, 5), dpi=100)
-    else:
+    elif len(T_list) <= 20:
         plt.figure(figsize=(14, 10), dpi=100)
+    else:
+        plt.figure(figsize=(28, 20), dpi=100)
     plt.rc('axes', axisbelow=True)
     plt.grid()
 
@@ -161,21 +163,22 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
                      color='b', fmt='o', markersize=4, capsize=4)
     if i < 2:  # without UCB, m=1
+        sizes = 6 if len(T_list) > 10 else 4
         plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
-                     color='r', fmt='o', markersize=4, capsize=4)
+                     color='r', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, ETC_['regret'], color='mediumseagreen', label='ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
-                     color='mediumseagreen', fmt='o', markersize=4, capsize=4)
+                     color='mediumseagreen', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC')
         plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
-                     color='magenta', fmt='o', markersize=4, capsize=4)
+                     color='magenta', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
-                     color='navy', fmt='o', markersize=4, capsize=4)
+                     color='navy', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, SuccElim_['regret'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
         plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
-                     color='purple', fmt='o', markersize=4, capsize=4)
+                     color='purple', fmt='o', markersize=sizes, capsize=sizes)
     if i == 2:  # general m plots
         plt.plot(T_list, naiveUCB1_['regret'], color='b', label='m-UCB1')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
@@ -215,33 +218,37 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.errorbar(T_list, SuccElim_['cumReg'], yerr=SuccElim_['standardError'],
                      color='purple', fmt='o', markersize=4, capsize=4)
     if i == 4:  # only for UCB1 and Switching bandits
+        sizes = 10 if len(T_list) > 20 else 4
         plt.plot(T_list, naiveUCB1_['regret'], color='blue', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
-                     color='blue', fmt='o', markersize=4, capsize=4)
+                     color='blue', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
-                     color='r', fmt='o', markersize=4, capsize=4)
+                     color='r', fmt='o', markersize=sizes, capsize=sizes)
         if Switch_do == 'yes':
             plt.plot(T_list, Switching_['regret'], color='mediumseagreen', label='Switch')
             plt.errorbar(T_list, Switching_['regret'], yerr=Switching_['standardError'],
                          color='mediumseagreen', fmt='o', markersize=4, capsize=4)
     if i == 5:  # only for UCB1 and Switching bandits, cumulative regret plots
+        sizes = 10 if len(T_list) > 20 else 4
         plt.plot(T_list, naiveUCB1_['cumReg'], color='blue', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError_cumReg'],
-                     color='blue', fmt='o', markersize=4, capsize=4)
+                     color='blue', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, ADAETC_['cumReg'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['cumReg'], yerr=ADAETC_['standardError_cumReg'],
-                     color='r', fmt='o', markersize=4, capsize=4)
+                     color='r', fmt='o', markersize=sizes, capsize=sizes)
         if Switch_do == 'yes':
             plt.plot(T_list, Switching_['cumReg'], color='mediumseagreen', label='Switch')
             plt.errorbar(T_list, Switching_['cumReg'], yerr=Switching_['standardError_cumReg'],
                          color='mediumseagreen', fmt='o', markersize=4, capsize=4)
 
-    plt.xticks(T_list)
-    plt.ylabel('Regret', fontsize=15) if i != 3 and i != 5 else plt.ylabel('Cumulative Regret', fontsize=15)
-    plt.xlabel('T', fontsize=15)
+    fontSize = 25 if len(T_list) > 10 else 15
+    plt.xticks(T_list, fontsize=10)
+    plt.yticks(fontsize=15)
+    plt.ylabel('Regret', fontsize=fontSize) if i != 3 and i != 5 else plt.ylabel('Regret', fontsize=fontSize)
+    plt.xlabel('T', fontsize=fontSize)
 
-    plt.legend(loc="upper left") if i < 4 else plt.legend(loc="upper left", prop={'size': 15})
+    plt.legend(loc="upper left", prop={'size': 20}) if i < 4 else plt.legend(loc="upper left", prop={'size': 20})
     if i == 0:  # with UCB, m = 1
         plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
                     '_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +
@@ -448,8 +455,8 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, roomForError=1):
             numWorkersArrived = 0
             allCohorts[generateCohorts].generated = True  # not using this, just there
             activeCohorts.append(generateCohorts)
-            cohortComingsAndGoings[generateCohorts, :] = np.array([generateCohorts, i, 0, 0])
             generateCohorts += 1
+            cohortComingsAndGoings[generateCohorts, :] = np.array([generateCohorts, i, 0, 0])  # 1st cohort has index 1
 
         queuedActiveCohorts[i] = len(activeCohorts)  # note the active cohort during period i
         graduatedActiveCohorts[i] = max(graduatedActiveCohorts)
@@ -487,12 +494,19 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, roomForError=1):
     plt.xlabel('Time', fontsize=13)
     plt.show()
 
+    plt.plot(range(int(totalPeriods / 5)),
+             np.add.reduceat(rewardGenerated, np.arange(0, len(rewardGenerated), 5))[:-1],
+             color='b', label='Average Reward', linestyle='--')
+    plt.ylabel('Average Reward', fontsize=13)
+    plt.xlabel('Time', fontsize=13)
+    plt.show()
+
     pd.DataFrame(np.column_stack((np.transpose(queuedJobs), np.transpose(usedJobs), np.transpose(rewardGenerated),
                                   np.transpose(queuedActiveCohorts), np.transpose(graduatedActiveCohorts))),
                  columns=['In Queue Jobs', 'Used Jobs', 'Reward Generated', 'Active Cohorts',
                           'Graduated Cohorts']).to_csv("timeDeps.csv", index=False)
     cohortComingsAndGoings[:, 3] = cohortComingsAndGoings[:, 2] - cohortComingsAndGoings[:, 1] + 1
-    pd.DataFrame(cohortComingsAndGoings,
+    pd.DataFrame(cohortComingsAndGoings[:(lastDeactivatedCohort + 1)],
                  columns=['Index', 'Activated', 'Deactivated', 'Life']).to_csv("cohortMoves.csv", index=False)
     print("=" * 25)
     print("Queued jobs (by time) ", end=" ")
