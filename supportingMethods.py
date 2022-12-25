@@ -1,66 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import fixedArms as fA
 import generateArms as gA
 import pandas as pd
 from cohortGenerator import *
 import time
-
-def sim_small_mid_large_m(armMeansArray_, arrayK_, arrayT_, m_, ucbPart_, pullDiv, alg):
-    output = {'reward': -1e8, 'regret': 1e8}
-    if m_ == 1:
-        if alg == 'ada' or alg == 'rada':
-            output = fA.ADAETC(armMeansArray_, 1, arrayK_, arrayT_, verbose=False)
-        elif alg == 'nada':
-            output = fA.NADAETC(armMeansArray_, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
-        elif alg == 'ucb1s':
-            output = fA.UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, ucbPart_, verbose=False)
-        elif alg == 'ucb1':
-            output = fA.naiveUCB1(armMeansArray_, 1, arrayK_, arrayT_, verbose=False)
-        elif alg == 'etc':
-            output = fA.ETC(armMeansArray_, 1, arrayK_, arrayT_, verbose=False, pullDiv=pullDiv)
-    else:
-        if alg == 'ada':
-            output = fA.m_ADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
-        elif alg == 'rada':
-            output = fA.RADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
-        elif alg == 'nada':
-            output = fA.m_NADAETC(armMeansArray_, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
-        elif alg == 'ucb1s':
-            output = fA.m_UCB1_stopping(armMeansArray_, 1, arrayK_, arrayT_, m_, ucbPart_, verbose=False)
-        elif alg == 'ucb1':
-            output = fA.m_naiveUCB1(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False)
-        elif alg == 'etc':
-            output = fA.m_ETC(armMeansArray_, 1, arrayK_, arrayT_, m_, verbose=False, pullDiv=pullDiv)
-    reward = output['reward']
-    regret = output['regret']
-    return {'reward': reward, 'regret': regret}
-
-
-def sample_K_T_streams(numStreams_, totalPeriods_, meanK_, meanT_, m_vals_, geom=False):
-    K_list_stream, T_list_stream = {}, {}
-    for st in range(numStreams_):
-        K_list_, T_list_ = np.zeros(totalPeriods_), np.zeros(totalPeriods_)
-        for s in range(totalPeriods_):
-            while True:
-                if geom:
-                    sample_K = np.random.geometric(1 / meanK_, 1)
-                else:
-                    sample_K = int(np.random.poisson(meanK_, 1))
-                if sample_K >= max(2, 2 * max(m_vals_) / totalPeriods_):
-                    K_list_[s] = sample_K
-                    break
-            while True:
-                if geom:
-                    sample_T = np.random.geometric(1 / meanT_, 1)
-                else:
-                    sample_T = int(np.random.poisson(meanT_, 1))
-                if sample_T > 5 * sample_K:
-                    T_list_[s] = sample_T
-                    break
-        K_list_stream[str(st)], T_list_stream[str(st)] = K_list_, T_list_
-
-    return {'K_list_stream': K_list_stream, 'T_list_stream': T_list_stream}
 
 
 def init_res():
@@ -278,37 +221,6 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
     plt.cla()
 
 
-def plot_marketSim(K_, T_, m_vals_, rews, stdevs, params_):
-    numOpt_, alpha__, bestRew = params_['numOpt'], params_['alpha'], params_['bestReward']
-    numArmDist_, totSims_ = params_['numArmDists'], params_['totalSim']
-    if numOpt_ == 0:
-        numOpt_ = 'no'
-    plt.figure(figsize=(7, 5), dpi=100)
-    plt.rc('axes', axisbelow=True)
-    plt.grid()
-
-    colors = ['red', 'purple', 'mediumseagreen', 'magenta', 'navy', 'blue']
-    labels = ['ADA-ETC', 'RADA-ETC', 'ETC', 'NADA-ETC', 'UCB1-s', 'UCB1']
-
-    counter = 0
-    for keys in rews.keys():
-        plt.plot(m_vals_.astype('str'), rews[keys], color=colors[counter], label=labels[counter])
-        plt.errorbar(m_vals_.astype('str'), rews[keys], yerr=stdevs[keys], color=colors[counter],
-                     fmt='o', markersize=4, capsize=4)
-        counter += 1
-    plt.plot(m_vals_.astype('str'), bestRew, color='darkgreen', linestyle='--', label='Best')
-
-    plt.ylabel('Reward', fontsize=13)
-    plt.xlabel('m', fontsize=13)
-
-    plt.legend(loc="upper left", bbox_to_anchor=(1, 1.02))
-    plt.savefig('res/marketSim_' + str(numOpt_) + 'OptArms_meanK' + str(K_) + '_meanT' + str(T_) + '_alpha' +
-                str(alpha__) + '_sim' + str(totSims_) + '_armDist' + str(numArmDist_) + '.eps',
-                format='eps', bbox_inches='tight')
-
-    plt.cla()
-
-
 
 def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, roomForError=1, alpha=0, rewardGrouping=10):
     # m_cohort is what I use to mean how many arms will come out of a cohort
@@ -320,6 +232,8 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, roomForError=1, alpha=0, r
     print(makesACohort, " makes a cohort. Decreasing allocated jobs per cohort by", roomForError)
     print("That is, T is ", int(T * makesACohort / K * roomForError), ";",
           int(T * makesACohort / K * roomForError) / m_cohort, " periods at the most.")
+    print("Grouping ultimate rewards every " + str(rewardGrouping) + " periods.")
+    rewardGrouping = int(rewardGrouping)
     generateCohorts = 0  # index used to "generate" the next ready cohort
     numWorkersArrived = 0  # keeps track of the cumulated workers arrived
     workerArrival = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
@@ -386,10 +300,11 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, roomForError=1, alpha=0, r
             for j in range(len(activeCohorts[keys])):
                 if numJobs[keys] >= m_cohort:
                     inProgress = allCohorts[keys][activeCohorts[keys][j]].step(budget=m_cohort)
-                    rewardGenerated[keys][i] += inProgress['realtime_reward']
+                    # rewardGenerated[keys][i] += inProgress['realtime_reward']
                     if inProgress['done']:
                         graduatedActiveCohorts[keys][i] += 1  # keep track of the cumulative deactivated/graduated cohorts
                         rewardOfCohort[keys][activeCohorts[keys][j]] = inProgress['final_reward']
+                        rewardGenerated[keys][i] += inProgress['final_reward']
                         toBeDeactivatedCohorts[keys].append(activeCohorts[keys][j])  # graduated cohort will be deactivated
                         lastDeactivatedCohort[keys] = activeCohorts[keys][j]
                         cohortComingsAndGoings[keys][activeCohorts[keys][j], 2] = i
