@@ -346,13 +346,17 @@ if __name__ == '__main__':
     doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott', 'FIGURE_wo_UCB1', 'FIGURE_trendReverse'
 
     if doing == 'market':
-        totalWorkers = 1000
+        totalWorkers = 2500
         T = 100
         K = 20
         m = 5
+        m_cohort = 4
         totalCohorts = int(totalWorkers / m)
         roomForError = 1  # need to pay attention to this, ADAETC stops if it has less than m budget left for pulls
-        DynamicMarketSim(m=m, K=K, T=T, m_cohort=1, totalCohorts=totalCohorts, roomForError=roomForError)
+        alpha = 0
+        rewardGrouping = 100
+        DynamicMarketSim(m=m, K=K, T=T, m_cohort=m_cohort, totalCohorts=totalCohorts, roomForError=roomForError,
+                         alpha=alpha, rewardGrouping=rewardGrouping)
     elif doing == 'm1':
         # fixed mean rewards throughout, m = 1
         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
