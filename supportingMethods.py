@@ -223,7 +223,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
 
 
 def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, workerArrival, roomForError=1, alpha=0, rewardGrouping=10,
-                     excludeZeros=False, cumulative=False):
+                     excludeZeros=False, cumulative=False, prints=True):
     # m_cohort is what I use to mean how many arms will come out of a cohort
     # e.g., if K = 20, m = 5, and m_cohort = 1, then every 4 arm will make a cohort and ultimate reward will be
     # all rewards averaged and divided by 5. If m_cohort = 1, ult. reward is all rewards averaged.
@@ -239,8 +239,6 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, workerArrival, roomForErro
     rewardGrouping = int(rewardGrouping)
     generateCohorts = 0  # index used to "generate" the next ready cohort
     numWorkersArrived = 0  # keeps track of the cumulated workers arrived
-
-    start_ = time.time()
 
     # generate all arms
     numAllArms = int(workerArrProb * totalPeriods * 1.1)  # room for extra arms in case more than planned shows up
@@ -323,71 +321,71 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, workerArrival, roomForErro
             activeCohorts[keys].remove(toBeDeactivatedCohorts[keys][j])
         queuedActiveCohorts[keys][totalPeriods] = len(activeCohorts[keys])
 
+    if prints:
+        for keys in algs.keys():
+            plt.figure(figsize=(7, 5), dpi=100)
+            plt.rc('axes', axisbelow=True)
+            plt.grid()
+            plt.plot(range(totalPeriods), queuedActiveCohorts[keys][:-1], color='b', linestyle='-')
+            plt.ylabel('Number of Cohorts', fontsize=13)
+            plt.xlabel('Time', fontsize=13)
+            plt.savefig('marketSim/fig_activeCohorts_cohortSize' + str(makesACohort) + '_' + keys +
+                        '.eps', format='eps', bbox_inches='tight')
+            plt.cla()
 
-    for keys in algs.keys():
+            plt.plot(range(totalPeriods), queuedJobs[keys][:-1], color='b', linestyle='-')
+            plt.ylabel('Number of Jobs', fontsize=13)
+            plt.xlabel('Time', fontsize=13)
+            plt.savefig('marketSim/fig_queuedJobs_cohortSize' + str(makesACohort) + '_' + keys +
+                        '.eps', format='eps', bbox_inches='tight')
+            plt.cla()
+
+
+        colors = ['red', 'navy', 'mediumseagreen', 'magenta', 'purple', 'blue']
+        labels = list(algs.keys())
+        counter = 0
         plt.figure(figsize=(7, 5), dpi=100)
         plt.rc('axes', axisbelow=True)
         plt.grid()
-        plt.plot(range(totalPeriods), queuedActiveCohorts[keys][:-1], color='b', linestyle='-')
-        plt.ylabel('Number of Cohorts', fontsize=13)
-        plt.xlabel('Time', fontsize=13)
-        plt.savefig('marketSim/fig_activeCohorts_cohortSize' + str(makesACohort) + '_' + keys +
-                    '.eps', format='eps', bbox_inches='tight')
+        for keys in algs.keys():
+            if excludeZeros:
+                rewardsGrouped = rewardGenerated[keys][rewardGenerated[keys] > 0]
+                if cumulative:
+                    rewardsGrouped = np.cumsum(rewardsGrouped)
+                times = len(rewardsGrouped) + 1
+                start = 1
+            else:
+                rewardsGrouped = np.cumsum(rewardGenerated[keys]) if cumulative else rewardGenerated[keys]
+                rewardsGrouped = np.add.reduceat(rewardsGrouped, np.arange(0, len(rewardsGrouped),
+                                                                                            rewardGrouping))[:-1]
+                times = int(totalPeriods / rewardGrouping)
+                start = 0
+            plt.plot(range(start, times), rewardsGrouped, color=colors[counter], label=labels[counter])
+            # plt.axhline(y=np.mean(rewardsGrouped), color='r')
+            counter += 1
+        plt.ylabel('Reward', fontsize=13) if not cumulative else plt.ylabel('Cumulative Reward', fontsize=13)
+        plt.xlabel('Time', fontsize=13) if not excludeZeros else plt.xlabel('Cohort', fontsize=13)
+        title = 'marketSim/fig_rewardGeneration_cohortSize' + str(makesACohort) + \
+                '_graduatedWorkerTotal' + str(lastDeactivatedCohort['ADA-ETC'] * makesACohort)
+        title += '_every' + str(rewardGrouping) + 'periods.eps' if not excludeZeros else '_cohortWise.eps'
+        plt.legend(loc="upper left", bbox_to_anchor=(1, 1.02))
+        plt.savefig(title, format='eps', bbox_inches='tight')
         plt.cla()
 
-        plt.plot(range(totalPeriods), queuedJobs[keys][:-1], color='b', linestyle='-')
-        plt.ylabel('Number of Jobs', fontsize=13)
-        plt.xlabel('Time', fontsize=13)
-        plt.savefig('marketSim/fig_queuedJobs_cohortSize' + str(makesACohort) + '_' + keys +
-                    '.eps', format='eps', bbox_inches='tight')
-        plt.cla()
 
 
-    colors = ['red', 'navy', 'mediumseagreen', 'magenta', 'purple', 'blue']
-    labels = list(algs.keys())
-    counter = 0
-    plt.figure(figsize=(7, 5), dpi=100)
-    plt.rc('axes', axisbelow=True)
-    plt.grid()
-    for keys in algs.keys():
-        if excludeZeros:
-            rewardsGrouped = rewardGenerated[keys][rewardGenerated[keys] > 0]
-            if cumulative:
-                rewardsGrouped = np.cumsum(rewardsGrouped)
-            times = len(rewardsGrouped) + 1
-            start = 1
-        else:
-            rewardsGrouped = np.cumsum(rewardGenerated[keys]) if cumulative else rewardGenerated[keys]
-            rewardsGrouped = np.add.reduceat(rewardsGrouped, np.arange(0, len(rewardsGrouped),
-                                                                                        rewardGrouping))[:-1]
-            times = int(totalPeriods / rewardGrouping)
-            start = 0
-        plt.plot(range(start, times), rewardsGrouped, color=colors[counter], label=labels[counter])
-        # plt.axhline(y=np.mean(rewardsGrouped), color='r')
-        counter += 1
-    plt.ylabel('Reward', fontsize=13) if not cumulative else plt.ylabel('Cumulative Reward', fontsize=13)
-    plt.xlabel('Time', fontsize=13) if not excludeZeros else plt.xlabel('Cohort', fontsize=13)
-    title = 'marketSim/fig_rewardGeneration_cohortSize' + str(makesACohort) + \
-            '_graduatedWorkerTotal' + str(lastDeactivatedCohort['ADA-ETC'] * makesACohort)
-    title += '_every' + str(rewardGrouping) + 'periods.eps' if not excludeZeros else '_cohortWise.eps'
-    plt.legend(loc="upper left", bbox_to_anchor=(1, 1.02))
-    plt.savefig(title, format='eps', bbox_inches='tight')
-    plt.cla()
-
-
-
-    for keys in algs.keys():
-        pd.DataFrame(np.column_stack((np.transpose(queuedJobs[keys]), np.transpose(usedJobs[keys]),
-                                      np.transpose(rewardGenerated[keys]), np.transpose(queuedActiveCohorts[keys]),
-                                      np.transpose(graduatedActiveCohorts[keys]))),
-                     columns=['In Queue Jobs', 'Used Jobs', 'Reward Generated', 'Active Cohorts',
-                              'Graduated Cohorts']).to_csv("marketSim/timeDeps_cohortSize" + str(makesACohort) +
-                                                           "_" + keys + ".csv", index=False)
-        cohortComingsAndGoings[keys][:, 3] = cohortComingsAndGoings[keys][:, 2] - cohortComingsAndGoings[keys][:, 1] + 1
-        pd.DataFrame(cohortComingsAndGoings[keys][:(lastDeactivatedCohort[keys] + 1)],
-                     columns=['Index', 'Activated', 'Deactivated', 'Life']).to_csv("marketSim/cohortMoves_cohortSize" +
-                                                                                   str(makesACohort) + "_" + keys +
-                                                                                   ".csv", index=False)
+        for keys in algs.keys():
+            pd.DataFrame(np.column_stack((np.transpose(queuedJobs[keys]), np.transpose(usedJobs[keys]),
+                                          np.transpose(rewardGenerated[keys]), np.transpose(queuedActiveCohorts[keys]),
+                                          np.transpose(graduatedActiveCohorts[keys]))),
+                         columns=['In Queue Jobs', 'Used Jobs', 'Reward Generated', 'Active Cohorts',
+                                  'Graduated Cohorts']).to_csv("marketSim/timeDeps_cohortSize" + str(makesACohort) +
+                                                               "_" + keys + ".csv", index=False)
+            cohortComingsAndGoings[keys][:, 3] = cohortComingsAndGoings[keys][:, 2] - \
+                                                 cohortComingsAndGoings[keys][:, 1] + 1
+            pd.DataFrame(cohortComingsAndGoings[keys][:(lastDeactivatedCohort[keys] + 1)],
+                         columns=['Index', 'Activated', 'Deactivated', 'Life']).\
+                to_csv("marketSim/cohortMoves_cohortSize" + str(makesACohort) + "_" + keys + ".csv", index=False)
     print("=" * 25)
     print("Total workers arrived ", end=" ")
     print(sum(workerArrival[:totalPeriods]))
@@ -415,4 +413,4 @@ def DynamicMarketSim(m, K, T, m_cohort, totalCohorts, workerArrival, roomForErro
         print("Cohort rewards (by cohort), last deactivated", lastDeactivatedCohort[keys], ", ", keys,  end=": ")
         print(sum(rewardOfCohort[keys][:lastDeactivatedCohort[keys]]))
 
-    print("took " + str(time.time() - start_) + " seconds")
+    return sum(rewardOfCohort['ADA-ETC'][:lastDeactivatedCohort['ADA-ETC']])

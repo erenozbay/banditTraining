@@ -178,6 +178,9 @@ if __name__ == '__main__':
     doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott', 'FIGURE_wo_UCB1', 'FIGURE_trendReverse'
 
     if doing == 'market':
+        numSim = 1
+        replicate = 1
+        prints = False if numSim > 1 or replicate > 1 else True
         totalWorkers = 500
         T = 100
         K = 20
@@ -185,17 +188,28 @@ if __name__ == '__main__':
         totalCohorts = int(totalWorkers / m)
         totalPeriods = totalCohorts * T
         workerArrProb = (K / T)
-        workerArrival = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
         roomForError = 1  # need to pay attention to this, algs skip if they have less than m budget left for pulls
         alpha = 0
         excludeZeros = False  # if want to graph rewards w.r.t. cohort graduations rather than time
         cumulative = False  # if  want to graph rewards as a running total
-        for i in range(m):
-            m_cohort = i + 1
-            rewardGrouping = 200  # (m_cohort / m) * T * 2
-            DynamicMarketSim(m=m, K=K, T=T, m_cohort=m_cohort, totalCohorts=totalCohorts, workerArrival=workerArrival,
-                             roomForError=roomForError, alpha=alpha, rewardGrouping=rewardGrouping,
-                             excludeZeros=excludeZeros, cumulative=cumulative)
+        adaetcRews = np.zeros((numSim * replicate, m))
+        start = time.time()
+        for sim in range(numSim):
+            workerArrival = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
+            for i in range(m):
+                m_cohort = i + 1
+                rewardGrouping = 200  # (m_cohort / m) * T * 2
+                for j in range(replicate):
+                    adaetcRews[sim * replicate + j, i] = DynamicMarketSim(m=m, K=K, T=T, m_cohort=m_cohort,
+                                                                          totalCohorts=totalCohorts,
+                                                                          workerArrival=workerArrival,
+                                                                          roomForError=roomForError, alpha=alpha,
+                                                                          rewardGrouping=rewardGrouping,
+                                                                          excludeZeros=excludeZeros,
+                                                                          cumulative=cumulative, prints=prints)
+        print("took " + str(time.time() - start) + " seconds")
+        print("=" * 40)
+        print(adaetcRews)
     elif doing == 'm1':
         # fixed mean rewards throughout, m = 1
         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
