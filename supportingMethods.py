@@ -92,6 +92,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
                  NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_):
     numOpt_, alpha__, totSims_, Switch_do = params_['numOpt'], params_['alpha'], params_['totalSim'], params_['Switch']
     numArmDists_, constant_c, delt_, m_ = params_['numArmDists'], params_['c'], params_['delta'], params_['m']
+    NADA = params_['NADA']
 
     if len(T_list) <= 10:
         plt.figure(figsize=(7, 5), dpi=100)
@@ -114,9 +115,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, ETC_['regret'], color='mediumseagreen', label='ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
                      color='mediumseagreen', fmt='o', markersize=sizes, capsize=sizes)
-        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC')
-        plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
-                     color='magenta', fmt='o', markersize=sizes, capsize=sizes)
+        if NADA == 'yes':
+            plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC')
+            plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
+                         color='magenta', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=sizes, capsize=sizes)
@@ -133,9 +135,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, ETC_['regret'], color='mediumseagreen', label='m-ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
                      color='mediumseagreen', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, NADAETC_['regret'], color='magenta', label='m-NADA-ETC')
-        plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
-                     color='magenta', fmt='o', markersize=4, capsize=4)
+        if NADA == 'yes':
+            plt.plot(T_list, NADAETC_['regret'], color='magenta', label='m-NADA-ETC')
+            plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
+                         color='magenta', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='m-UCB1-s')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=4, capsize=4)
@@ -152,9 +155,10 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
         plt.plot(T_list, ETC_['cumReg'], color='mediumseagreen', label='ETC')
         plt.errorbar(T_list, ETC_['cumReg'], yerr=ETC_['standardError'],
                      color='mediumseagreen', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, NADAETC_['cumReg'], color='magenta', label='NADA-ETC')
-        plt.errorbar(T_list, NADAETC_['cumReg'], yerr=NADAETC_['standardError'],
-                     color='magenta', fmt='o', markersize=4, capsize=4)
+        if NADA == 'yes':
+            plt.plot(T_list, NADAETC_['cumReg'], color='magenta', label='NADA-ETC')
+            plt.errorbar(T_list, NADAETC_['cumReg'], yerr=NADAETC_['standardError'],
+                         color='magenta', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, UCB1_stopping_['cumReg'], color='navy', label='UCB1-s')
         plt.errorbar(T_list, UCB1_stopping_['cumReg'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=4, capsize=4)
@@ -192,7 +196,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, ADAETC_, ETC_,
     plt.ylabel('Regret', fontsize=fontSize) if i != 3 and i != 5 else plt.ylabel('Regret', fontsize=fontSize)
     plt.xlabel('T', fontsize=fontSize)
 
-    plt.legend(loc="upper left", prop={'size': 20}) if i < 4 else plt.legend(loc="upper left", prop={'size': 20})
+    plt.legend(loc="upper left") if i < 4 else plt.legend(loc="upper left", prop={'size': 20})
     if i == 0:  # with UCB, m = 1
         plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
                     '_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '_c' + str(constant_c) +
