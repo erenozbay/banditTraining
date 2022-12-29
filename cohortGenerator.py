@@ -2,7 +2,7 @@ import numpy as np
 
 
 class CohortGenerate:
-    def __init__(self, cohortNum, armList, K, T, m, alg):
+    def __init__(self, cohortNum, armList, K, T, m, alg, exploreLess=False):
         self.alg = alg
         self.cohortNum = cohortNum
         self.generated = False
@@ -16,6 +16,8 @@ class CohortGenerate:
         self.empirical_mean = np.zeros(self.K)
         self.cumulative_reward = np.zeros(self.K)
         self.pullEach = int(np.ceil(np.power(T / (K - m), 2 / 3))) if m > 1 else int(np.ceil(np.power(T / K, 2 / 3)))
+        if exploreLess:
+            self.pullEach = int(np.ceil(np.power(T / K, 2 / 3)))
         self.exploitPhase = False
         self.stopped = 0
         self.pullset = np.zeros(m)
@@ -39,8 +41,8 @@ class CohortGenerate:
                             up = 2 * np.sqrt(max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
                             self.indexhigh[pull] = self.empirical_mean[pull] + up * boolie
                             self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
-                        elif self.alg == 'UCB1-s':
-                            confidence = 2 * np.sqrt(np.log(self.T) / np.power(self.pulls[pull], 1)) * boolie
+                        elif self.alg == 'UCB1-I-s':
+                            confidence = 2 * np.sqrt(np.log(self.T / self.pulls[pull]) / np.power(self.pulls[pull], 1)) * boolie
                             self.indexhigh[pull] = self.empirical_mean[pull] + confidence
                             self.indexlow[pull] = self.empirical_mean[pull] - confidence
             else:
@@ -68,8 +70,8 @@ class CohortGenerate:
                     max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
                 self.indexhigh[pull] = self.empirical_mean[pull] + up * boolie
                 self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
-            elif self.alg == 'UCB1-s':
-                confidence = 2 * np.sqrt(np.log(self.T) / np.power(self.pulls[pull], 1)) * boolie
+            elif self.alg == 'UCB1-I-s':
+                confidence = 2 * np.sqrt(np.log(self.T / self.pulls[pull]) / np.power(self.pulls[pull], 1)) * boolie
                 self.indexhigh[pull] = self.empirical_mean[pull] + confidence
                 self.indexlow[pull] = self.empirical_mean[pull] - confidence
             elif self.alg == 'ETC':
@@ -124,8 +126,9 @@ class CohortGenerate:
 
             return {'budget': budget,
                     'done': done,
-                    'final_reward':
-                        np.sum(self.cumulative_reward[self.pullset]),  # np.mean(self.cumulative_reward[self.pullset]),
+                    'final_reward': #self.T / self.m * np.sum(self.arms[np.argsort(-self.arms)[0:self.m]]) -
+                                    np.sum(self.cumulative_reward[self.pullset]),
+                    # np.mean(self.cumulative_reward[self.pullset]),
                     'realtime_reward': self.currentReward,  # / self.m,
                     'wasted_pulls': self.T - sum(self.pulls)}
 
