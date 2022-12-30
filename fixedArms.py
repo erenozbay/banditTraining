@@ -412,7 +412,8 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
             'numSwitchErrors': switch_stError}
 
 
-def naiveUCB1(armInstances, endSim, K_list, T_list, improved=False, verbose=True):
+def naiveUCB1(armInstances, endSim, K_list, T_list, improved=False, ucbPart=2, verbose=True):
+    print("UCB part is ", ucbPart)
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -470,9 +471,9 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, improved=False, verbose=True
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                        index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
+                        index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T) / pulls[pull])
                         if improved:  # , improved=False
-                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
                             # denom = np.sum(
                             #     [np.sum([min(pulls[k], np.sqrt(pulls[k] * pulls[j])) for k in range(K)]) for j in
                             #      range(K)])
@@ -502,9 +503,9 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, improved=False, verbose=True
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                        index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
+                        index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T) / pulls[pull])
                         if improved:  # , improved=False
-                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
                             # denom = np.sum(
                             #     [np.sum([min(pulls[k], np.sqrt(pulls[k] * pulls[j])) for k in range(K)]) for j in
                             #      range(K)])
@@ -626,7 +627,8 @@ def naiveUCB1(armInstances, endSim, K_list, T_list, improved=False, verbose=True
             'numSwitchErrors': switch_stError}
 
 
-def m_naiveUCB1(armInstances, endSim, K_list, T_list, m, improved=False, verbose=True):
+def m_naiveUCB1(armInstances, endSim, K_list, T_list, m, improved=False, ucbPart=2, verbose=True):
+    print("UCB part is ", ucbPart)
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -665,9 +667,9 @@ def m_naiveUCB1(armInstances, endSim, K_list, T_list, m, improved=False, verbose
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(capT) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(capT) / pulls[pull])
                             if improved:  # , improved=False
-                                index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull])
+                                index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull])
                             pull += 1
                             if pull >= K:
                                 break
@@ -679,9 +681,9 @@ def m_naiveUCB1(armInstances, endSim, K_list, T_list, m, improved=False, verbose
                             cumulative_reward[pull] += rew
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-                            index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(capT) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(capT) / pulls[pull])
                             if improved:  # , improved=False
-                                index[pull] = empirical_mean[pull] + 2 * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull])
+                                index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull])
 
                 cumreward_sim[a] += sum(cumulative_reward)
                 reward_sim[a] += np.mean(np.sort(cumulative_reward)[-m:])
@@ -1194,6 +1196,7 @@ def RADAETC(armInstances, endSim, K_list, T_list, m, verbose=True):
 
 def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=2, verbose=True):
     # fix K and vary T values
+    print("UCB part is ", ucbPart)
     K = K_list[0]
     numT = len(T_list)
     numInstance = len(armInstances)
@@ -1339,6 +1342,7 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=
 
 
 def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, improved=False, ucbPart=2, verbose=True):
+    print("UCB part is ", ucbPart)
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)

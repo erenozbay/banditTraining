@@ -5,7 +5,7 @@ from supportingMethods import *
 from copy import deepcopy
 import fixedArms as fA
 from datetime import datetime
-
+from manualFigs import *
 
 def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
     print("Running rotting bandits")
@@ -93,7 +93,7 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
                                                    delta=delt, verbose=True)
     elif justUCB == 'yes':
         def fn(x):
-            return (2 / np.power(x, 2 / 5)).round(5)
+            return (1 / np.power(x, 1 / 2)).round(5)
 
         delt = fn(T_list_)
         armInstances_ = gA.generateArms_fixedDelta(K_list, T_list, numArmDists_, alpha__, numOpt_,
@@ -112,14 +112,14 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
     naiveUCB1_, TS, ADAETC_, ETC_, NADAETC_, BAI_ETC, \
         UCB1_stopping_, SuccElim_, Switch_ = None, None, None, None, None, None, None, None, None
     if ucbSim:
-        if justUCB != 'no':
-            print("RUNNING ADA-ETC HERE w UCB1 and TS and BAI_ETC!!!!")
-            ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
-            print("starting BAI-ETC")
-            BAI_ETC = fA.bai_etc(armInstances_, endSim_, K_list_, T_list_)
-            print("starting TS")
-            TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
-        naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, improved=improved)
+        # if justUCB != 'no':
+        #     print("RUNNING ADA-ETC HERE w UCB1 and TS and BAI_ETC!!!!")
+        #     ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+        #     print("starting BAI-ETC")
+        #     BAI_ETC = fA.bai_etc(armInstances_, endSim_, K_list_, T_list_)
+        #     print("starting TS")
+        #     TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
+        naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
     # if Switch == 'yes':
     #     Switch_ = fA.Switching(armInstances_, endSim, K_list, T_list)
     if justUCB == 'no':
@@ -127,7 +127,7 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
         ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
         # if NADA == 'yes':
         #     NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
-        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved)
+        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=2)
         print("starting TS")
         TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
         # SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
@@ -164,13 +164,13 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
         print(str(numOpt_) + ' optimal arms')
 
     m_NADAETC_ = None
-    m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved)
+    m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1)
     m_ADAETC_ = fA.m_ADAETC(armInstances_, endSim, K_list_, T_list_, m_)
     RADAETC_ = fA.RADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
     m_ETC_ = fA.m_ETC(armInstances_, endSim_, K_list_, T_list_, m_)
     # if NADA == 'yes':
     #     m_NADAETC_ = fA.m_NADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
-    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved)
+    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=2)
     print("took " + str(time.time() - start_) + " seconds")
 
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
@@ -182,14 +182,17 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
 
 
 if __name__ == '__main__':
-    K_list = np.array([10])
+    K_list = np.array([8])  # 8 instead of 10??
     T_list = np.arange(1, 11) * 100  # np.array([15000])
-    m = 5
-    numArmDists = 10 * 10
-    alpha_ = 0.4
+    m = 4
+    numArmDists = 100
+    alpha_ = 0
     ucbPart = 2
-    endSim = 5 * 10
+    endSim = 50
     doing = 'mGeq1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+
+    # chart('mEq1')
+    # exit()
 
     if doing == 'm1':
         # fixed mean rewards throughout, m = 1
