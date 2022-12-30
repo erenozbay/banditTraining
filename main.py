@@ -111,6 +111,15 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
                 print(str(numOpt_) + " opt arms, gap " + str(delt_))
     naiveUCB1_, TS, ADAETC_, ETC_, NADAETC_, BAI_ETC, \
         UCB1_stopping_, SuccElim_, Switch_ = None, None, None, None, None, None, None, None, None
+    if justUCB == 'no':
+        ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+        ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
+        # if NADA == 'yes':
+        #     NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
+        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
+        print("starting TS")
+        TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
+        # SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
     if ucbSim:
         # if justUCB != 'no':
         #     print("RUNNING ADA-ETC HERE w UCB1 and TS and BAI_ETC!!!!")
@@ -120,17 +129,6 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
         #     print("starting TS")
         #     TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
         naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
-    # if Switch == 'yes':
-    #     Switch_ = fA.Switching(armInstances_, endSim, K_list, T_list)
-    if justUCB == 'no':
-        ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
-        ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
-        # if NADA == 'yes':
-        #     NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
-        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=2)
-        print("starting TS")
-        TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
-        # SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
 
     print("took " + str(time.time() - start_) + " seconds")
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
@@ -170,7 +168,7 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
     m_ETC_ = fA.m_ETC(armInstances_, endSim_, K_list_, T_list_, m_)
     # if NADA == 'yes':
     #     m_NADAETC_ = fA.m_NADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
-    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=2)
+    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1)
     print("took " + str(time.time() - start_) + " seconds")
 
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
@@ -182,142 +180,147 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
 
 
 if __name__ == '__main__':
-    K_list = np.array([8])  # 8 instead of 10??
-    T_list = np.arange(1, 11) * 100  # np.array([15000])
-    m = 4
-    numArmDists = 100
-    alpha_ = 0
-    ucbPart = 2
-    endSim = 50
-    doing = 'mGeq1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
-    # chart('mEq1')
-    # exit()
+    mvals = np.array([1])
+    Kvals = np.array([16])
+    for i in range(1):
+        K_list = np.array([Kvals[i]]) #  np.array([8])  # 8 instead of 10??
+        T_list = np.arange(1, 11) * 100  # np.array([15000])
+        m = mvals[i]
+        numArmDists = 100
+        endSim = 50
+        doing = 'mEq1'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
 
-    if doing == 'm1':
-        # fixed mean rewards throughout, m = 1
-        mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
-               numOpt_=1, delt_=0, plots=True, ucbSim=True, improved=True, fixed='no', justUCB='no', Switch='no', NADA='no')
-        # # fixed='Intervals' or 'Gap' or anything else
+        chart('mEq1')
+        exit()
+        a = 0 #if Kvals[i] == 8 else 1
+        for j in range(a, 2):
+            alpha_ = (j == 0) * 0 + (j == 1) * 0.4
+            print("m ", m, " K ", K_list, " alpha", alpha_)
+            if doing == 'm1':
+                # fixed mean rewards throughout, m = 1
+                mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
+                       numOpt_=1, delt_=0, plots=True, ucbSim=True, improved=True, fixed='no', justUCB='no', Switch='no', NADA='no')
+                # # fixed='Intervals' or 'Gap' or anything else
 
-    elif doing == 'mGeq1':
-        # fixed mean rewards throughout, m > 1
-        mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_,
-                 numOpt_=1, delt_=0, improved=True, NADA='no')
-    elif doing == 'market':
-        algs = {'ADA-ETC': {}}#, 'UCB1-I-s': {}, 'ETC': {}}
-        numSim = 1
-        replicate = 1
-        excels = False if numSim > 1 or replicate > 1 else True
-        figs = False  # do you want the figures or not
-        correction = True
-        totalWorkers = 500
-        T = 200
-        K = 20
-        m = 5
-        totalC = 100  # int(totalWorkers / m)  # total cohorts
-        totalPeriods = totalC * T
-        workerArrProb = (K / T)
-        roomForError = 1  # need to pay attention to this, algs skip if they have less than m budget left for pulls
-        alpha = 0
-        excludeZeros = False  # if want to graph rewards w.r.t. cohort graduations rather than time
-        cumulative = False  # if  want to graph rewards as a running total
-        exploreLess = True  # if true makes all \tau values T/K^(2/3)
+            elif doing == 'mGeq1':
+                # fixed mean rewards throughout, m > 1
+                mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_,
+                         numOpt_=1, delt_=0, improved=True, NADA='no')
+            elif doing == 'market':
+                algs = {'ADA-ETC': {}}#, 'UCB1-I-s': {}, 'ETC': {}}
+                numSim = 1
+                replicate = 1
+                excels = False if numSim > 1 or replicate > 1 else True
+                figs = False  # do you want the figures or not
+                correction = True
+                totalWorkers = 500
+                T = 200
+                K = 20
+                m = 5
+                totalC = 100  # int(totalWorkers / m)  # total cohorts
+                totalPeriods = totalC * T
+                workerArrProb = (K / T)
+                roomForError = 1  # need to pay attention to this, algs skip if they have less than m budget left for pulls
+                alpha = 0
+                excludeZeros = False  # if want to graph rewards w.r.t. cohort graduations rather than time
+                cumulative = False  # if  want to graph rewards as a running total
+                exploreLess = True  # if true makes all \tau values T/K^(2/3)
 
-        results, normalizedResults, rewards, normalizedRewards = {}, {}, {}, {}
-        results2, normalizedResults2, rewards2, normalizedRewards2 = {}, {}, {}, {}
-        for keys in algs.keys():
-            results[keys] = {}
-            results[keys]['reward'] = np.zeros(m)
-            results[keys]['stError'] = np.zeros(m)
-            normalizedResults[keys] = {}
-            normalizedResults[keys]['reward'] = np.zeros(m)
-            normalizedResults[keys]['stError'] = np.zeros(m)
-            rewards[keys] = np.zeros((numSim, m))
-            normalizedRewards[keys] = np.zeros((numSim, m))
+                results, normalizedResults, rewards, normalizedRewards = {}, {}, {}, {}
+                results2, normalizedResults2, rewards2, normalizedRewards2 = {}, {}, {}, {}
+                for keys in algs.keys():
+                    results[keys] = {}
+                    results[keys]['reward'] = np.zeros(m)
+                    results[keys]['stError'] = np.zeros(m)
+                    normalizedResults[keys] = {}
+                    normalizedResults[keys]['reward'] = np.zeros(m)
+                    normalizedResults[keys]['stError'] = np.zeros(m)
+                    rewards[keys] = np.zeros((numSim, m))
+                    normalizedRewards[keys] = np.zeros((numSim, m))
 
-            results2[keys] = {}
-            results2[keys]['reward'] = np.zeros(m)
-            results2[keys]['stError'] = np.zeros(m)
-            normalizedResults2[keys] = {}
-            normalizedResults2[keys]['reward'] = np.zeros(m)
-            normalizedResults2[keys]['stError'] = np.zeros(m)
-            rewards2[keys] = np.zeros((numSim, m))
-            normalizedRewards2[keys] = np.zeros((numSim, m))
+                    results2[keys] = {}
+                    results2[keys]['reward'] = np.zeros(m)
+                    results2[keys]['stError'] = np.zeros(m)
+                    normalizedResults2[keys] = {}
+                    normalizedResults2[keys]['reward'] = np.zeros(m)
+                    normalizedResults2[keys]['stError'] = np.zeros(m)
+                    rewards2[keys] = np.zeros((numSim, m))
+                    normalizedRewards2[keys] = np.zeros((numSim, m))
 
-        start = time.time()
-        for sim in range(numSim):
-            print(datetime.now().time())
-            print("\nSim " + str(sim + 1) + " out of " + str(numSim) + "\n")
-            # generate all arms
-            numAllArms = int(int(workerArrProb * totalPeriods * 1.2) / K)  # room for extra arms in case more shows up
-            # generate the arms, single row contains the arms that will be in a single cohort
-            print("An instance sample", end=" ")
-            armsGenerated = gA.generateArms(K_list=[K], T_list=[1], numArmDists=numAllArms, alpha=alpha)
-            for i in range(m):
-                workerArr = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
-                m_cohort = i + 1
-                makesACohort = int(m_cohort * int(K / m))
-                rewardGrouping = 200  # (m_cohort / m) * T * 2
-                res = DynamicMarketSim(algs=algs, m=m, K=K, T=T, m_cohort=m_cohort,
-                                       totalCohorts=totalC, workerArrival=workerArr,
-                                       armsGenerated=armsGenerated.reshape(int(K * numAllArms / makesACohort),
-                                                                           makesACohort),
-                                       exploreLess=True, rewardGrouping=rewardGrouping,
-                                       excludeZeros=excludeZeros, cumulative=cumulative,
-                                       excels=excels, replicate=replicate, correction=False)
-                res2 = DynamicMarketSim(algs=algs, m=m, K=K, T=T, m_cohort=m_cohort,
-                                        totalCohorts=totalC, workerArrival=workerArr,
-                                        armsGenerated=armsGenerated.reshape(int(K * numAllArms / makesACohort),
-                                                                            makesACohort),
-                                        exploreLess=True, rewardGrouping=rewardGrouping,
-                                        excludeZeros=excludeZeros, cumulative=cumulative,
-                                        excels=excels, replicate=replicate, correction=True)
+                start = time.time()
+                for sim in range(numSim):
+                    print(datetime.now().time())
+                    print("\nSim " + str(sim + 1) + " out of " + str(numSim) + "\n")
+                    # generate all arms
+                    numAllArms = int(int(workerArrProb * totalPeriods * 1.2) / K)  # room for extra arms in case more shows up
+                    # generate the arms, single row contains the arms that will be in a single cohort
+                    print("An instance sample", end=" ")
+                    armsGenerated = gA.generateArms(K_list=[K], T_list=[1], numArmDists=numAllArms, alpha=alpha)
+                    for i in range(m):
+                        workerArr = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
+                        m_cohort = i + 1
+                        makesACohort = int(m_cohort * int(K / m))
+                        rewardGrouping = 200  # (m_cohort / m) * T * 2
+                        res = DynamicMarketSim(algs=algs, m=m, K=K, T=T, m_cohort=m_cohort,
+                                               totalCohorts=totalC, workerArrival=workerArr,
+                                               armsGenerated=armsGenerated.reshape(int(K * numAllArms / makesACohort),
+                                                                                   makesACohort),
+                                               exploreLess=True, rewardGrouping=rewardGrouping,
+                                               excludeZeros=excludeZeros, cumulative=cumulative,
+                                               excels=excels, replicate=replicate, correction=False)
+                        res2 = DynamicMarketSim(algs=algs, m=m, K=K, T=T, m_cohort=m_cohort,
+                                                totalCohorts=totalC, workerArrival=workerArr,
+                                                armsGenerated=armsGenerated.reshape(int(K * numAllArms / makesACohort),
+                                                                                    makesACohort),
+                                                exploreLess=True, rewardGrouping=rewardGrouping,
+                                                excludeZeros=excludeZeros, cumulative=cumulative,
+                                                excels=excels, replicate=replicate, correction=True)
+
+                        for keys in algs.keys():
+                            rewards[keys][sim, i] = res['rews'][keys]
+                            normalizedRewards[keys][sim, i] = res['rewsNormalized'][keys]
+                            rewards2[keys][sim, i] = res2['rews'][keys]
+                            normalizedRewards2[keys][sim, i] = res2['rewsNormalized'][keys]
 
                 for keys in algs.keys():
-                    rewards[keys][sim, i] = res['rews'][keys]
-                    normalizedRewards[keys][sim, i] = res['rewsNormalized'][keys]
-                    rewards2[keys][sim, i] = res2['rews'][keys]
-                    normalizedRewards2[keys][sim, i] = res2['rewsNormalized'][keys]
-
-        for keys in algs.keys():
-            for i in range(m):
-                results[keys]['reward'][i] = np.mean(rewards[keys][:, i])
-                results[keys]['stError'][i] = np.sqrt(np.var(rewards[keys][:, i] / numSim))
-                normalizedResults[keys]['reward'][i] = np.mean(normalizedRewards[keys][:, i])
-                normalizedResults[keys]['stError'][i] = np.sqrt(np.var(normalizedRewards[keys][:, i] / numSim))
-                results2[keys]['reward'][i] = np.mean(rewards2[keys][:, i])
-                results2[keys]['stError'][i] = np.sqrt(np.var(rewards2[keys][:, i] / numSim))
-                normalizedResults2[keys]['reward'][i] = np.mean(normalizedRewards2[keys][:, i])
-                normalizedResults2[keys]['stError'][i] = np.sqrt(np.var(normalizedRewards2[keys][:, i] / numSim))
+                    for i in range(m):
+                        results[keys]['reward'][i] = np.mean(rewards[keys][:, i])
+                        results[keys]['stError'][i] = np.sqrt(np.var(rewards[keys][:, i] / numSim))
+                        normalizedResults[keys]['reward'][i] = np.mean(normalizedRewards[keys][:, i])
+                        normalizedResults[keys]['stError'][i] = np.sqrt(np.var(normalizedRewards[keys][:, i] / numSim))
+                        results2[keys]['reward'][i] = np.mean(rewards2[keys][:, i])
+                        results2[keys]['stError'][i] = np.sqrt(np.var(rewards2[keys][:, i] / numSim))
+                        normalizedResults2[keys]['reward'][i] = np.mean(normalizedRewards2[keys][:, i])
+                        normalizedResults2[keys]['stError'][i] = np.sqrt(np.var(normalizedRewards2[keys][:, i] / numSim))
 
 
-        print("\nTook " + str(time.time() - start) + " seconds")
-        print("=" * 40)
-        for keys in algs.keys():
-            print(keys, results[keys])
-            print(keys, normalizedResults[keys])
-            print(keys, "normalize", results2[keys])
-            print(keys, "normalize", normalizedResults2[keys])
-        # plot_market_mBased(algs, m, K, T, results, totalC, numSim, replicate, correction, exploreLess)
-        # plot_market_mBased(algs, m, K, T, normalizedResults, totalC, numSim, replicate, correction, exploreLess, normalized=True)
-        # plot_market_mBased(algs, m, K, T, results2, totalC, numSim, replicate, True)
-        # plot_market_mBased(algs, m, K, T, normalizedResults2, totalC, numSim, replicate, True, normalized=True)
+                print("\nTook " + str(time.time() - start) + " seconds")
+                print("=" * 40)
+                for keys in algs.keys():
+                    print(keys, results[keys])
+                    print(keys, normalizedResults[keys])
+                    print(keys, "normalize", results2[keys])
+                    print(keys, "normalize", normalizedResults2[keys])
+                # plot_market_mBased(algs, m, K, T, results, totalC, numSim, replicate, correction, exploreLess)
+                # plot_market_mBased(algs, m, K, T, normalizedResults, totalC, numSim, replicate, correction, exploreLess, normalized=True)
+                # plot_market_mBased(algs, m, K, T, results2, totalC, numSim, replicate, True)
+                # plot_market_mBased(algs, m, K, T, normalizedResults2, totalC, numSim, replicate, True, normalized=True)
 
-    elif doing == 'm1bar':
-        # fixed means but difference is specified between two best arms, varying difference between means, m = 1
-        # endSim should be 1, numArmDists should be multiple
-        mEqOne_barPlots(K_list, T_list, endSim, alpha_,
-                        numOpt_=1, generateIns_=numArmDists, rng=11, ucbSim=False, justUCB='no')
-        # generateIns_ takes the place of running with multiple arm instances
-        # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
-        # change numOpt to >1 to generate K - numOpt - 1 random arms in uniform(0, 0.5), one at exactly 0.5,
-        # and numOpt many with delta distance to 0.5
-        # ucbSim is True is going for including UCB in
-        # justUCB is 'no' if not going only for UCB but others too, o/w it's 'yes'
-        # If yes, the instances are so that the \Delta between arms govern the T
-    elif doing == 'rott':
-        # rotting bandits part
-        rotting(K_list, T_list, numArmDists, endSim, alpha_,
-                beta__=0.01, pw_=1 / 2)
-        # larger pw means higher variance in mean changes
+            elif doing == 'm1bar':
+                # fixed means but difference is specified between two best arms, varying difference between means, m = 1
+                # endSim should be 1, numArmDists should be multiple
+                mEqOne_barPlots(K_list, T_list, endSim, alpha_,
+                                numOpt_=1, generateIns_=numArmDists, rng=11, ucbSim=False, justUCB='no')
+                # generateIns_ takes the place of running with multiple arm instances
+                # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
+                # change numOpt to >1 to generate K - numOpt - 1 random arms in uniform(0, 0.5), one at exactly 0.5,
+                # and numOpt many with delta distance to 0.5
+                # ucbSim is True is going for including UCB in
+                # justUCB is 'no' if not going only for UCB but others too, o/w it's 'yes'
+                # If yes, the instances are so that the \Delta between arms govern the T
+            elif doing == 'rott':
+                # rotting bandits part
+                rotting(K_list, T_list, numArmDists, endSim, alpha_,
+                        beta__=0.01, pw_=1 / 2)
+                # larger pw means higher variance in mean changes
