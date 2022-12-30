@@ -101,9 +101,13 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
     plt.grid()
 
     if i == 0:  # with UCB, m=1
+        sizes = 6 if len(T_list) > 10 else 4
         plt.plot(T_list, naiveUCB1_['regret'], color='b', label='UCB1-I')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
-                     color='b', fmt='o', markersize=4, capsize=4)
+                     color='b', fmt='o', markersize=sizes, capsize=sizes)
+        plt.plot(T_list, TS['regret'], color='purple', label='TS')
+        plt.errorbar(T_list, TS['regret'], yerr=TS['standardError'],
+                     color='purple', fmt='o', markersize=sizes, capsize=sizes)
     if i < 2:  # without UCB, m=1
         sizes = 6 if len(T_list) > 10 else 4
         plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
@@ -119,9 +123,6 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
         plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-I-s')
         plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
                      color='navy', fmt='o', markersize=sizes, capsize=sizes)
-        plt.plot(T_list, TS['regret'], color='purple', label='TS')
-        plt.errorbar(T_list, TS['regret'], yerr=TS['standardError'],
-                     color='purple', fmt='o', markersize=sizes, capsize=sizes)
         if SuccElim_ is not None:
             plt.plot(T_list, SuccElim_['regret'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
             plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
@@ -437,4 +438,5 @@ def DynamicMarketSim(algs, m, K, T, m_cohort, totalCohorts, workerArrival, armsG
             print("Cohort rewards (by cohort), last deactivated", lastDeactivatedCohort[keys], ", ", keys,  end=": ")
             print(sum(rewardOfCohort[keys][:lastDeactivatedCohort[keys]]))
 
-    return {'rews': finalRewards, 'rewsNormalized': finalRewardsNormalized}
+    return {'rews': finalRewards, 'rewsNormalized': finalRewardsNormalized,
+            'QAC': queuedActiveCohorts}
