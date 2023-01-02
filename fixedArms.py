@@ -273,7 +273,7 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
                         if K == 2:
                             slower_v_fasterArmUCB_sim[pull, a] = index[pull]
                     else:
-                        sampling = np.random.beta(index, pulls + 2 - index)
+                        sampling = np.random.beta(np.maximum(index, np.ones(K)), pulls + 1 - np.maximum(index, np.ones(K)))
                         pull = np.argmax(sampling)
 
                         # K = 2 special case checks

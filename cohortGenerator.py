@@ -42,7 +42,7 @@ class CohortGenerate:
                             self.indexhigh[pull] = self.empirical_mean[pull] + up * boolie
                             self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
                         elif self.alg == 'UCB1-I-s':
-                            confidence = 2 * np.sqrt(np.log(self.T / self.pulls[pull]) / np.power(self.pulls[pull], 1)) * boolie
+                            confidence = 1 * np.sqrt(np.log(self.T / self.pulls[pull]) / np.power(self.pulls[pull], 1)) * boolie
                             self.indexhigh[pull] = self.empirical_mean[pull] + confidence
                             self.indexlow[pull] = self.empirical_mean[pull] - confidence
             else:

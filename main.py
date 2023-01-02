@@ -4,6 +4,7 @@ import fixedArmsRotting as fAR
 from supportingMethods import *
 from copy import deepcopy
 import fixedArms as fA
+import discreteDist_fixedArms as dFA
 from datetime import datetime
 from manualFigs import *
 
@@ -112,22 +113,22 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
     naiveUCB1_, TS, ADAETC_, ETC_, NADAETC_, BAI_ETC, \
         UCB1_stopping_, SuccElim_, Switch_ = None, None, None, None, None, None, None, None, None
     if justUCB == 'no':
-        # ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
-        # ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
+        ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+        ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
         # if NADA == 'yes':
         #     NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
-        # UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
+        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
         print("starting TS")
         TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
         # SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
     if ucbSim:
-        # if justUCB != 'no':
-        #     print("RUNNING ADA-ETC HERE w UCB1 and TS and BAI_ETC!!!!")
-        #     ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
-        #     print("starting BAI-ETC")
-        #     BAI_ETC = fA.bai_etc(armInstances_, endSim_, K_list_, T_list_)
-        #     print("starting TS")
-        #     TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
+        if justUCB != 'no':
+            print("RUNNING ADA-ETC HERE w UCB1 and TS and BAI_ETC!!!!")
+            ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+            print("starting BAI-ETC")
+            BAI_ETC = fA.bai_etc(armInstances_, endSim_, K_list_, T_list_)
+            print("starting TS")
+            TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
         naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
 
     print("took " + str(time.time() - start_) + " seconds")
@@ -184,24 +185,80 @@ if __name__ == '__main__':
     # mvals = np.array([1, 1])
     # Kvals = np.array([4, 8])
     # for i in range(2):
-    K_list = np.array([2]) #  np.array([8])  # 8 instead of 10??
-    T_list = np.arange(1, 11) * 100  # np.array([15000])
+    K_list = np.array([5]) #  np.array([8])  # 8 instead of 10??
+    T_list = np.arange(1, 21) * 50  # np.array([15000])
     m = 1
     alpha_ = 0
     numArmDists = 100
-    endSim = 50
-    doing = 'market'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    endSim = 1
+    doing = 'm1_amazon'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    start = time.time()
 
-    chart('fullSamplePath')
-    exit()
+    # chart('rewardGen')
+    # exit()
     # a = 0 #if Kvals[i] == 8 else 1
     # for j in range(a, 2):
     #     alpha_ = (j == 0) * 0 + (j == 1) * 0.4
-    print("m ", m, " K ", K_list, " alpha", alpha_)
+    if doing == 'm1_amazon':
+        numIns = 50
+        elements = np.array([0.2, 0.4, 0.6, 0.8, 1])
+        ### ipad case ###
+        probabilities = np.array([[0.07, 0.05, 0.06, 0.12, 0.7],
+                                  [0.06, 0, 0.09, 0.15, 0.7],
+                                  [0.04, 0.04, 0.02, 0.13, 0.77],
+                                  [0.06, 0.02, 0.04, 0.1, 0.78],
+                                  [0, 0.07, 0.04, 0.12, 0.77]])
+        best = np.max(np.dot(probabilities, elements))
+        item = 'ipad'  # total num of ratings across all items is 650, minimum is 60
+        ### ipad case ###
+        ### car phone holder ###
+        probabilities = np.array([[0.05, 0.02, 0.04, 0.08, 0.81],
+                                  [0.06, 0.03, 0.05, 0.1, 0.76],
+                                  [0.05, 0.03, 0.07, 0.15, 0.7],
+                                  [0.04, 0.06, 0.07, 0.16, 0.67],
+                                  [0.06, 0.03, 0.08, 0.13, 0.7]])
+        best = np.max(np.dot(probabilities, elements))
+        item = 'phoneHolder'  # total num of ratings across all items is 37k, minimum is 800
+        ### car phone holder ###
+        ### iphone case ###
+        probabilities = np.array([[0.02, 0.02, 0.05, 0.13, 0.78],
+                                  [0.06, 0.05, 0.08, 0.14, 0.67],
+                                  [0.04, 0.03, 0.07, 0.15, 0.71],
+                                  [0.05, 0.03, 0.07, 0.16, 0.69],
+                                  [0.03, 0.02, 0.05, 0.14, 0.76]])
+        best = np.max(np.dot(probabilities, elements))
+        item = 'iphone'  # total num of ratings across all items is 62k, minimum is 5k
+        ### iphone case ###
+        ### dashcam ###
+        # probabilities = np.array([[0.08, 0.05, 0.06, 0.19, 0.62],
+        #                           [0.12, 0.06, 0.08, 0.18, 0.56],
+        #                           [0.07, 0.02, 0.06, 0.22, 0.63],
+        #                           [0.07, 0.03, 0.06, 0.14, 0.7],
+        #                           [0.05, 0.01, 0.06, 0.26, 0.62]])
+        # best = np.max(np.dot(probabilities, elements))
+        # item = 'dashcam'  # total num of ratings across all items is 3k, minimum is 250
+        ### dashcam ###
+
+
+        ADAETC_ = dFA.ADAETC(probabilities, numIns, endSim, K_list, T_list, best)
+        ETC_ = dFA.ETC(probabilities, numIns, endSim, K_list, T_list, best)
+        UCB1_stopping_ = dFA.UCB1_stopping(probabilities, numIns, endSim, K_list, T_list, best, improved=True, ucbPart=1)
+        TS = dFA.thompson(probabilities, numIns, endSim, K_list, T_list, best)
+        naiveUCB1_ = dFA.naiveUCB1(probabilities, numIns, endSim, K_list, T_list, best, improved=True, ucbPart=1)
+
+        params_ = {'numOpt': 1, 'alpha': 1, 'totalSim': item,
+                   'numArmDists': 100, 'c': 4, 'delta': 0, 'm': 1, 'Switch': 'no', 'NADA': 'no'}
+        _ = None
+        for i in range(2):
+            plot_fixed_m(i, K_list, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
+                         _, UCB1_stopping_, _, _, params_)
+        print("took " + str(time.time() - start) + " seconds")
+    else:
+        print("m ", m, " K ", K_list, " alpha", alpha_)
     if doing == 'm1':
         # fixed mean rewards throughout, m = 1
         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
-               numOpt_=1, delt_=0, plots=False, ucbSim=False, improved=True, fixed='no', justUCB='no', Switch='no', NADA='no')
+               numOpt_=1, delt_=0, plots=True, ucbSim=True, improved=True, fixed='no', justUCB='no', Switch='no', NADA='no')
         # # fixed='Intervals' or 'Gap' or anything else
 
     elif doing == 'mGeq1':
@@ -209,15 +266,15 @@ if __name__ == '__main__':
         mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_,
                  numOpt_=1, delt_=0, improved=True, NADA='no')
     elif doing == 'market':
-        algs = {'ADA-ETC': {}}#, 'UCB1-I-s': {}, 'ETC': {}}
-        numSim = 50
-        replicate = 1
+        algs = {'UCB1-I-s': {}}  #{'ADA-ETC': {}, 'UCB1-I-s': {}, 'ETC': {}}
+        numSim = 10
+        replicate = 2
         excels = False if numSim > 1 or replicate > 1 else True
         figs = False  # do you want the figures or not
         correction = True
         totalWorkers = 500
-        T = 200
-        K = 20
+        T = 100
+        K = 10
         m = 5
         totalC = 100  # int(totalWorkers / m)  # total cohorts
         totalPeriods = totalC * T
@@ -261,9 +318,9 @@ if __name__ == '__main__':
             # generate the arms, single row contains the arms that will be in a single cohort
             print("An instance sample", end=" ")
             armsGenerated = gA.generateArms(K_list=[K], T_list=[1], numArmDists=numAllArms, alpha=alpha)
-            for i in range(1):  # for i in range(m):
+            for i in range(m):  # for i in range(m):
                 workerArr = np.random.binomial(1, (np.ones(totalPeriods) * workerArrProb))  # worker arrival stream
-                m_cohort = 5  # i + 1
+                m_cohort = i + 1
                 makesACohort = int(m_cohort * int(K / m))
                 rewardGrouping = 200  # (m_cohort / m) * T * 2
                 res = DynamicMarketSim(algs=algs, m=m, K=K, T=T, m_cohort=m_cohort,
@@ -273,21 +330,21 @@ if __name__ == '__main__':
                                        exploreLess=True, rewardGrouping=rewardGrouping,
                                        excludeZeros=excludeZeros, cumulative=cumulative,
                                        excels=excels, replicate=replicate, correction=False)
-                res2 = DynamicMarketSim(algs=algs, m=m, K=K, T=T, m_cohort=m_cohort,
-                                        totalCohorts=totalC, workerArrival=workerArr,
-                                        armsGenerated=armsGenerated.reshape(int(K * numAllArms / makesACohort),
-                                                                            makesACohort),
-                                        exploreLess=True, rewardGrouping=rewardGrouping,
-                                        excludeZeros=excludeZeros, cumulative=cumulative,
-                                        excels=excels, replicate=replicate, correction=True)
+                # res2 = DynamicMarketSim(algs=algs, m=m, K=K, T=T, m_cohort=m_cohort,
+                #                         totalCohorts=totalC, workerArrival=workerArr,
+                #                         armsGenerated=armsGenerated.reshape(int(K * numAllArms / makesACohort),
+                #                                                             makesACohort),
+                #                         exploreLess=True, rewardGrouping=rewardGrouping,
+                #                         excludeZeros=excludeZeros, cumulative=cumulative,
+                #                         excels=excels, replicate=replicate, correction=True)
 
                 for keys in algs.keys():
                     rewards[keys][sim, i] = res['rews'][keys]
                     normalizedRewards[keys][sim, i] = res['rewsNormalized'][keys]
-                    rewards2[keys][sim, i] = res2['rews'][keys]
-                    normalizedRewards2[keys][sim, i] = res2['rewsNormalized'][keys]
-                    QAC[keys][sim, :] = res['QAC'][keys]
-                    QAC2[keys][sim, :] = res2['QAC'][keys]
+                    # rewards2[keys][sim, i] = res2['rews'][keys]
+                    # normalizedRewards2[keys][sim, i] = res2['rewsNormalized'][keys]
+                    # QAC[keys][sim, :] = res['QAC'][keys]
+                    # QAC2[keys][sim, :] = res2['QAC'][keys]
 
         for keys in algs.keys():
             for i in range(m):
@@ -295,10 +352,10 @@ if __name__ == '__main__':
                 results[keys]['stError'][i] = np.sqrt(np.var(rewards[keys][:, i] / numSim))
                 normalizedResults[keys]['reward'][i] = np.mean(normalizedRewards[keys][:, i])
                 normalizedResults[keys]['stError'][i] = np.sqrt(np.var(normalizedRewards[keys][:, i] / numSim))
-                results2[keys]['reward'][i] = np.mean(rewards2[keys][:, i])
-                results2[keys]['stError'][i] = np.sqrt(np.var(rewards2[keys][:, i] / numSim))
-                normalizedResults2[keys]['reward'][i] = np.mean(normalizedRewards2[keys][:, i])
-                normalizedResults2[keys]['stError'][i] = np.sqrt(np.var(normalizedRewards2[keys][:, i] / numSim))
+                # results2[keys]['reward'][i] = np.mean(rewards2[keys][:, i])
+                # results2[keys]['stError'][i] = np.sqrt(np.var(rewards2[keys][:, i] / numSim))
+                # normalizedResults2[keys]['reward'][i] = np.mean(normalizedRewards2[keys][:, i])
+                # normalizedResults2[keys]['stError'][i] = np.sqrt(np.var(normalizedRewards2[keys][:, i] / numSim))
 
 
         print("\nTook " + str(time.time() - start) + " seconds")
@@ -306,14 +363,14 @@ if __name__ == '__main__':
         for keys in algs.keys():
             print(keys, results[keys])
             print(keys, normalizedResults[keys])
-            print(keys, "normalize", results2[keys])
-            print(keys, "normalize", normalizedResults2[keys])
+            # print(keys, "normalize", results2[keys])
+            # print(keys, "normalize", normalizedResults2[keys])
         # plot_market_mBased(algs, m, K, T, results, totalC, numSim, replicate, correction, exploreLess)
         # plot_market_mBased(algs, m, K, T, normalizedResults, totalC, numSim, replicate, correction, exploreLess, normalized=True)
         # plot_market_mBased(algs, m, K, T, results2, totalC, numSim, replicate, True)
         # plot_market_mBased(algs, m, K, T, normalizedResults2, totalC, numSim, replicate, True, normalized=True)
-            pd.DataFrame(np.transpose(QAC[keys])).to_csv("marketSim/QAC_noCorrection_" + str(keys) + ".csv", index=False)
-            pd.DataFrame(np.transpose(QAC2[keys])).to_csv("marketSim/QAC_Correction_" + str(keys) + ".csv", index=False)
+        #     pd.DataFrame(np.transpose(QAC[keys])).to_csv("marketSim/QAC_noCorrection_" + str(keys) + ".csv", index=False)
+        #     pd.DataFrame(np.transpose(QAC2[keys])).to_csv("marketSim/QAC_Correction_" + str(keys) + ".csv", index=False)
 
     elif doing == 'm1bar':
         # fixed means but difference is specified between two best arms, varying difference between means, m = 1
