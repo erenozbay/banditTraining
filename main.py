@@ -21,7 +21,7 @@ def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
     print("took " + str(time.time() - start_) + " seconds; alpha " + str(alpha__) + ", beta " + str(beta__))
 
 
-def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, numOpt_, generateIns_,
+def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, ADA_ETCucbPart=2, numOpt_=1, generateIns_=2,
                     rng=11, ucbSim=True, justUCB='no'):
     T_list_raw = deepcopy(T_list_)
     naiveUCB1_, TS, ADAETC_, ETC_, NADAETC_, BAI_ETC, \
@@ -45,19 +45,21 @@ def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, numOpt_, generateIns_,
                 # used to test for 0.5 v. 0.5 + 1/T case
 
             if ucbSim or (justUCB == 'yes'):
-                naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_)
-                res = store_res(res, generateIns_, i, naiveUCB1_, 'UCB1')
+                naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, improved=True, ucbPart=1)
+                res = store_res(res, generateIns_, i, naiveUCB1_, 'UCB1-I')
+                TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
+                res = store_res(res, generateIns_, i, TS, 'TS')
             if justUCB == 'no':
-                ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+                ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_, ucbPart=ADA_ETCucbPart)
                 res = store_res(res, generateIns_, i, ADAETC_, 'ADAETC')
                 ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
                 res = store_res(res, generateIns_, i, ETC_, 'ETC')
                 # NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
-                res = store_res(res, generateIns_, i, NADAETC_, 'NADAETC')
-                UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_)
-                res = store_res(res, generateIns_, i, UCB1_stopping_, 'UCB1-s')
+                # res = store_res(res, generateIns_, i, NADAETC_, 'NADAETC')
+                UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=True, ucbPart=1)
+                res = store_res(res, generateIns_, i, UCB1_stopping_, 'UCB1-I-s')
                 # SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c=4)
-                res = store_res(res, generateIns_, i, SuccElim_, 'SuccElim')
+                # res = store_res(res, generateIns_, i, SuccElim_, 'SuccElim')
         print("took " + str(time.time() - start_) + " seconds")
 
         if justUCB == 'no':
@@ -65,14 +67,14 @@ def mEqOne_barPlots(K_list_, T_list_, endSim_, alpha__, numOpt_, generateIns_,
             for i in range(a, 2):
                 UCBin = i == 0
                 plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                                   generateIns_, alpha__, numOpt_, UCBin)
-                if len(T_list_raw) == 1:
-                    plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                                       generateIns_, alpha__, numOpt_, UCBin, 'cumrew')
-                    plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                                       generateIns_, alpha__, numOpt_, UCBin, 'cumReg')
-                    plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
-                                       generateIns_, alpha__, numOpt_, UCBin, 'Reward')
+                                   generateIns_, alpha__, numOpt_, ADA_ETCucbPart, UCBin)
+                plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
+                                   generateIns_, alpha__, numOpt_, ADA_ETCucbPart, UCBin, 'cumReg')
+                # if len(T_list_raw) == 1:
+                #     plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
+                #                        generateIns_, alpha__, numOpt_, UCBin, 'cumrew')
+                #     plot_varying_delta(res, delt, endSim_, T_list_[0], K_list[0],
+                #                        generateIns_, alpha__, numOpt_, UCBin, 'Reward')
 
 
 def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
@@ -185,13 +187,14 @@ if __name__ == '__main__':
     # mvals = np.array([1, 1])
     # Kvals = np.array([4, 8])
     # for i in range(2):
-    K_list = np.array([5]) #  np.array([8])  # 8 instead of 10??
-    T_list = np.arange(1, 11) * 100  # np.array([15000])
+    K_list = np.array([3]) #  np.array([8])  # 8 instead of 10??
+    T_list = np.array([100])  # np.arange(1, 11) * 100  # np.array([15000])
     m = 1
     alpha_ = 0
     numArmDists = 100
-    endSim = 1
-    doing = 'm1_amazon'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    endSim = 50
+    doing = 'm1bar'  # 'm1', 'mGeq1', 'm1bar', 'market', 'rott'
+    ADA_ETCucbPart = 1
     start = time.time()
 
     # chart('rewardGen')
@@ -230,13 +233,13 @@ if __name__ == '__main__':
         # item = 'iphone'  # total num of ratings across all items is 62k, minimum is 5k
         ### iphone case ###
         ### dashcam ###
-        probabilities = np.array([[0.08, 0.05, 0.06, 0.19, 0.62],
-                                  [0.12, 0.06, 0.08, 0.18, 0.56],
-                                  [0.07, 0.02, 0.06, 0.22, 0.63],
-                                  [0.07, 0.03, 0.06, 0.14, 0.7],
-                                  [0.05, 0.01, 0.06, 0.26, 0.62]])
-        best = np.max(np.dot(probabilities, elements))
-        item = 'dashcam'  # total num of ratings across all items is 3k, minimum is 250
+        # probabilities = np.array([[0.08, 0.05, 0.06, 0.19, 0.62],
+        #                           [0.12, 0.06, 0.08, 0.18, 0.56],
+        #                           [0.07, 0.02, 0.06, 0.22, 0.63],
+        #                           [0.07, 0.03, 0.06, 0.14, 0.7],
+        #                           [0.05, 0.01, 0.06, 0.26, 0.62]])
+        # best = np.max(np.dot(probabilities, elements))
+        # item = 'dashcam'  # total num of ratings across all items is 3k, minimum is 250
         ### dashcam ###
 
 
@@ -375,8 +378,8 @@ if __name__ == '__main__':
     elif doing == 'm1bar':
         # fixed means but difference is specified between two best arms, varying difference between means, m = 1
         # endSim should be 1, numArmDists should be multiple
-        mEqOne_barPlots(K_list, T_list, endSim, alpha_,
-                        numOpt_=1, generateIns_=numArmDists, rng=11, ucbSim=False, justUCB='no')
+        mEqOne_barPlots(K_list, T_list, endSim, alpha_, ADA_ETCucbPart=ADA_ETCucbPart,
+                        numOpt_=2, generateIns_=numArmDists, rng=11, ucbSim=True, justUCB='no')
         # generateIns_ takes the place of running with multiple arm instances
         # It is needed if K > 2, because then we will be generating K - 2 random arms in uniform(0, 0.5)
         # change numOpt to >1 to generate K - numOpt - 1 random arms in uniform(0, 0.5), one at exactly 0.5,

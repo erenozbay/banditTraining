@@ -4,10 +4,10 @@ from cohortGenerator import *
 
 
 def init_res():
-    res_ = {'UCB1': {}, 'ADAETC': {}, 'ETC': {}, 'NADAETC': {}, 'UCB1-s': {}, 'SuccElim': {}}
+    res_ = {'UCB1-I': {}, 'TS': {}, 'ADAETC': {}, 'ETC': {}, 'NADAETC': {}, 'UCB1-I-s': {}, 'SuccElim': {}}
     for i in res_.keys():
         res_[i]['Regret'], res_[i]['Reward'], res_[i]['cumrew'] = [], [], []
-        res_[i]['standardError'], res_[i]['cumReg'] = [], []
+        res_[i]['standardError'], res_[i]['standardError_cumReg'], res_[i]['cumReg'] = [], [], []
     return res_
 
 
@@ -22,17 +22,20 @@ def store_res(res_, generateIns__, dif, inputDict_, key_):
         res_[key_]['standardError'].append(inputDict_['standardError_perSim'])
     else:
         res_[key_]['standardError'].append(inputDict_['standardError'][0])
+        res_[key_]['standardError_cumReg'].append(inputDict_['standardError_cumReg'][0])
     return res_
 
 
-def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__, UCBin_=False, title='Regret'):
+def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__, ADA_ETCucbPart, UCBin_=False,
+                       title='Regret'):
     bw = 0.15  # bar width
-    naive_ucb1 = res_['UCB1']
+    naive_ucb1 = res_['UCB1-I']
     adaetc = res_['ADAETC']
     etc = res_['ETC']
-    nadaetc = res_['NADAETC']
-    ucb1s = res_['UCB1-s']
-    succ_elim = res_['SuccElim']
+    ts = res_['TS']
+    # nadaetc = res_['NADAETC']
+    ucb1s = res_['UCB1-I-s']
+    # succ_elim = res_['SuccElim']
 
     length = len(adaetc[title]) if title != 'cumReg' else len(adaetc[title]) - 1
     bar1 = np.arange(length) if title != 'cumReg' else np.arange(length) + 0.15
@@ -44,29 +47,37 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
 
     plt.figure(figsize=(12, 8), dpi=150)
 
-    plt.bar(bar1, adaetc[title][-length:], yerr=adaetc['standardError'][-length:], color='r',
+    se_ADA = adaetc['standardError'][-length:] if title == 'Regret' else adaetc['standardError_cumReg'][-length:]
+    se_ETC = etc['standardError'][-length:] if title == 'Regret' else etc['standardError_cumReg'][-length:]
+    se_ucb1s = ucb1s['standardError'][-length:] if title == 'Regret' else ucb1s['standardError_cumReg'][-length:]
+    se_naive_ucb1 = naive_ucb1['standardError'][-length:] if title == 'Regret' else naive_ucb1['standardError_cumReg'][-length:]
+    se_ts = ts['standardError'][-length:] if title == 'Regret' else ts['standardError_cumReg'][-length:]
+
+    plt.bar(bar1, adaetc[title][-length:], yerr=se_ADA, color='r',
             width=bw, edgecolor='grey', label='ADA-ETC')
-    plt.bar(bar2, etc[title][-length:], yerr=etc['standardError'][-length:], color='g',
+    plt.bar(bar2, etc[title][-length:], yerr=se_ETC, color='mediumseagreen',
             width=bw, edgecolor='grey', label='ETC')
-    plt.bar(bar3, nadaetc[title][-length:], yerr=nadaetc['standardError'][-length:], color='magenta',
-            width=bw, edgecolor='grey', label='NADA-ETC')
-    plt.bar(bar4, ucb1s[title][-length:], yerr=ucb1s['standardError'][-length:], color='navy',
-            width=bw, edgecolor='grey', label='UCB1-s')
-    plt.bar(bar5, succ_elim[title][-length:], yerr=succ_elim['standardError'][-length:], color='purple',
-            width=bw, edgecolor='grey', label='SuccElim - c(4)')
+    # plt.bar(bar3, nadaetc[title][-length:], yerr=nadaetc['standardError'][-length:], color='magenta',
+    #         width=bw, edgecolor='grey', label='NADA-ETC')
+    plt.bar(bar3, ucb1s[title][-length:], yerr=se_ucb1s, color='navy',
+            width=bw, edgecolor='grey', label='UCB1-I-s')
+    # plt.bar(bar5, succ_elim[title][-length:], yerr=succ_elim['standardError'][-length:], color='purple',
+    #         width=bw, edgecolor='grey', label='SuccElim - c(4)')
     if UCBin_:
-        plt.bar(bar6, naive_ucb1[title][-length:], yerr=naive_ucb1['standardError'][-length:], color='b',
-                width=bw, edgecolor='grey', label='UCB1')
+        plt.bar(bar4, naive_ucb1[title][-length:], yerr=se_naive_ucb1, color='b',
+                width=bw, edgecolor='grey', label='UCB1-I')
+        plt.bar(bar5, ts[title][-length:], yerr=se_ts, color='purple',
+                width=bw, edgecolor='grey', label='TS')
 
     chartTitle = ''
     if title == 'cumrew':
         chartTitle = 'Cumulative Reward'
     elif title == 'cumReg':
-        chartTitle = 'Sum Objective Regret'
+        chartTitle = 'Regret'
     elif title == 'Reward':
         chartTitle = 'Best Arm Reward'
     elif title == 'Regret':
-        chartTitle = 'Max Objective Regret'
+        chartTitle = 'Regret'
     plt.ylabel(chartTitle, fontsize=15)
     plt.xlabel(r'$\Delta$', fontweight='bold', fontsize=15)
     plt.xticks([x + bw for x in bar1], delt_[-length:])
@@ -75,12 +86,12 @@ def plot_varying_delta(res_, delt_, numSim, T_, K_, generateIns__, alp, numOpt__
 
     if K_ == 2:
         plt.savefig('res/' + str(K_) + 'arms_halfHalfDelta_' + str(numOpt__) + 'optArms_' + title + '_' + str(numSim) +
-                    'sims_T' + str(T_) + '_' + str(generateIns__) + 'inst_UCB' + str(UCBin_) + '.eps',
-                    format='eps', bbox_inches='tight')
+                    'sims_T' + str(T_) + '_' + str(generateIns__) + 'inst_UCB' + str(UCBin_) + '_ADA_ETCucbPart' +
+                    str(ADA_ETCucbPart) + '.eps', format='eps', bbox_inches='tight')
     else:
         plt.savefig('res/' + str(K_) + 'arms_halfHalfDelta_' + str(numOpt__) + 'optArms_' + title + '_' + str(numSim) +
                     'sims_T' + str(T_) + '_' + str(generateIns__) + 'inst_' + str(alp) + 'alpha_UCB' +
-                    str(UCBin_) + '.eps', format='eps', bbox_inches='tight')
+                    str(UCBin_) + '_ADA_ETCucbPart' + str(ADA_ETCucbPart) + '.eps', format='eps', bbox_inches='tight')
 
     plt.cla()
 

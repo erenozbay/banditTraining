@@ -252,12 +252,9 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
             for j in range(endSim):
                 empirical_mean = np.zeros(K)
                 pulls = np.zeros(K)
-                pulls_later = np.zeros(K)
-                prev_pull = 0
-                index = np.ones(K)
+                index = np.zeros(K)
                 cumulative_reward = np.zeros(K)
                 lastTime_simLocal = 0
-                mostPulledArm = 0
 
                 for i in range(T):
                     if i < K:
@@ -267,46 +264,20 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         index[pull] += rew
-                        prev_pull = pull
 
                         # policy independent statistics
                         if K == 2:
                             slower_v_fasterArmUCB_sim[pull, a] = index[pull]
                     else:
-                        sampling = np.random.beta(np.maximum(index, np.ones(K)), pulls + 1 - np.maximum(index, np.ones(K)))
+                        sampling = np.random.beta(np.maximum(index, np.ones(K)),
+                                                  pulls + 1 - np.maximum(index, np.ones(K)))
                         pull = np.argmax(sampling)
-
-                        # K = 2 special case checks
-                        if K == 2:
-                            if pulls[0] == pulls[1]:  # denote the last time when the pulls were the same
-                                lastTime_simLocal = i + 1
-                            if np.abs(index[0] - index[1]) < 1e-8:  # if indices are super close, pick randomly
-                                pull = int(np.random.binomial(1, 0.5, 1))
-                            if i < T / 25:
-                                if index[pull] < slower_v_fasterArmUCB_sim[pull, a]:  # update smallest index so far
-                                    slower_v_fasterArmUCB_sim[pull, a] = index[pull]
-                            if pulls[pull] == int(T / 2) - 1:
-                                slower_v_fasterArmUCB_sim[2, a] = index[pull]
-                                mostPulledArm = pull
 
                         rew = np.random.binomial(1, arms[pull], 1)
                         cumulative_reward[pull] += rew
                         pulls[pull] += 1
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         index[pull] += rew  # empirical_mean[pull] + 2 * np.sqrt(np.log(T) / pulls[pull])
-
-                        # policy independent statistics
-                        if i > T * 0.5:
-                            pulls_later[pull] += 1
-                        if i <= T / 4:
-                            switch_sim[0, a] += (1 - prev_pull == pull)
-                        elif i <= T / 2:
-                            switch_sim[1, a] += (1 - prev_pull == pull)
-                        elif i <= 3 * T / 4:
-                            switch_sim[2, a] += (1 - prev_pull == pull)
-                        else:
-                            switch_sim[3, a] += (1 - prev_pull == pull)
-                        prev_pull = pull
 
                 # done with the simulation of an instance
                 subOptRewards_sim[a] += (max(pulls) / T)
@@ -317,19 +288,6 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
                 regret_sim[a] += max(arms) * T - max(cumulative_reward)
                 cumReg_sim[a] += max(arms) * T - sum(cumulative_reward)
                 stError_perSim[j] = max(arms) * T - max(cumulative_reward)
-                if K > 2:
-                    numPull_sim[0, a] += max(pulls) / T
-                else:
-                    numPull_sim[0, a] += 1 if ((pulls[0] - pulls_later[0]) <= (pulls[1] - pulls_later[1]) and
-                                                     (pulls_later[0] > pulls_later[1])) else 0
-                    numPull_sim[1, a] += 1 if ((pulls[0] - pulls_later[0]) < (pulls[1] - pulls_later[1]) and
-                                                     (pulls_later[0] <= pulls_later[1])) else 0
-                    numPull_sim[2, a] += 1 if ((pulls[0] - pulls_later[0]) >= (pulls[1] - pulls_later[1]) and
-                                                     (pulls_later[0] < pulls_later[1])) else 0
-                    numPull_sim[3, a] += 1 if ((pulls[0] - pulls_later[0]) > (pulls[1] - pulls_later[1]) and
-                                                     (pulls_later[0] >= pulls_later[1])) else 0
-                    slower_v_fasterArmUCB_sim[3, a] += \
-                        slower_v_fasterArmUCB_sim[2, a] < slower_v_fasterArmUCB_sim[int(1 - mostPulledArm), a]
 
             subOptRewards_sim[a] /= endSim
             mostPulled_sim[a] /= endSim
@@ -338,14 +296,6 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
             cumReg_sim[a] /= endSim
             reward_sim[a] /= endSim
             lastTime_sim[a] /= endSim
-            for i in range(4):
-                switch_sim[i, a] /= endSim
-            numPull_sim[0, a] /= endSim
-            if K == 2:
-                numPull_sim[1, a] /= endSim
-                numPull_sim[2, a] /= endSim
-                numPull_sim[3, a] /= endSim
-                slower_v_fasterArmUCB_sim[3, a] /= endSim
 
         mostPulled[t] = np.mean(mostPulled_sim)
         regret[t] = np.mean(regret_sim)
@@ -356,15 +306,6 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
         stError_cumReg[t] = np.sqrt(np.var(cumReg_sim) / numInstance)
         lastTime[t] = np.mean(lastTime_sim)
         subOptRewards[t] = np.mean(subOptRewards_sim)
-        for i in range(4):
-            switch[i, t] = np.mean(switch_sim[i])
-            switch_stError[i, t] = np.sqrt(np.var(switch_sim[i]) / numInstance)
-        numPull[0, t] = np.mean(numPull_sim[0, :])
-        if K == 2:
-            numPull[1, t] = np.mean(numPull_sim[1, :])
-            numPull[2, t] = np.mean(numPull_sim[2, :])
-            numPull[3, t] = np.mean(numPull_sim[3, :])
-            slower_v_fasterArmUCB[t] = np.mean(slower_v_fasterArmUCB_sim[3, :])
 
         if verbose:
             print("Thompson Sampling results:")
@@ -387,18 +328,6 @@ def thompson(armInstances, endSim, K_list, T_list, verbose=True):
             print("Ratio of pulls spent on the most pulled arm to horizon T")
             print(subOptRewards)
             print(datetime.now().time())
-            # print(numPull) if K == 2 else print(numPull[0, :])
-        # print('optimal first two elements; among those, switch first, no switch second') if K == 2 else print()
-
-        # print('Number of switches between arms ', end='')
-        # print(switch[0] + switch[1] + switch[2] + switch[3])
-
-        # print("Last time the indices were super close " + str(lastTime) + " stError " +
-        #       str(np.sqrt(np.var(lastTime_sim) / numInstance)))
-        # print("Frequency of min UCB_{T/25}(least pulled) > UCB(T/2)", end=" ")
-        # print(slower_v_fasterArmUCB)
-        # print()
-        # print(slower_v_fasterArmUCB_sim)
             print("="*50)
     return {'reward': reward,
             'cumreward': cumreward,
@@ -863,7 +792,7 @@ def m_ETC(armInstances, endSim, K_list, T_list, m, verbose=True, pullDiv=1):
             'standardError': stError}
 
 
-def ADAETC_sub(arms, K, T, RADA=False):
+def ADAETC_sub(arms, K, T, ucbPart=2, RADA=False):
     empirical_mean = np.zeros(K)
     pulls = np.zeros(K)
     indexhigh = np.zeros(K)
@@ -882,7 +811,7 @@ def ADAETC_sub(arms, K, T, RADA=False):
             cumulative_reward[pull] += rew
             pulls[pull] += 1
             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-            up = 2 * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
+            up = ucbPart * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
             indexhigh[pull] = empirical_mean[pull] + up * (pullEach > pulls[pull])
             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull]) * (up > 0)
         else:
@@ -891,7 +820,7 @@ def ADAETC_sub(arms, K, T, RADA=False):
             cumulative_reward[pull] += rew
             pulls[pull] += 1
             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-            up = 2 * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
+            up = ucbPart * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
             indexhigh[pull] = empirical_mean[pull] + up * (pullEach > pulls[pull])
             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull]) * (up > 0)
 
@@ -926,7 +855,7 @@ def subIndices(K_, m_):
     return indices_
 
 
-def ADAETC(armInstances, endSim, K_list, T_list, verbose=True):
+def ADAETC(armInstances, endSim, K_list, T_list, ucbPart=2, verbose=True):
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -954,7 +883,7 @@ def ADAETC(armInstances, endSim, K_list, T_list, verbose=True):
             arms = armInstances[a, (t * K):((t + 1) * K)]
 
             for j in range(endSim):
-                res = ADAETC_sub(arms, K, T)
+                res = ADAETC_sub(arms, K, T, ucbPart)
                 cumulative_reward = res['cumulative_reward']
                 pulls = res['pulls']
                 pull_arm = np.argmax(pulls)
