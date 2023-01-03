@@ -186,7 +186,7 @@ if __name__ == '__main__':
     # Kvals = np.array([4, 8])
     # for i in range(2):
     K_list = np.array([5]) #  np.array([8])  # 8 instead of 10??
-    T_list = np.arange(1, 21) * 50  # np.array([15000])
+    T_list = np.arange(1, 11) * 100  # np.array([15000])
     m = 1
     alpha_ = 0
     numArmDists = 100
@@ -200,7 +200,7 @@ if __name__ == '__main__':
     # for j in range(a, 2):
     #     alpha_ = (j == 0) * 0 + (j == 1) * 0.4
     if doing == 'm1_amazon':
-        numIns = 50
+        numIns = 250
         elements = np.array([0.2, 0.4, 0.6, 0.8, 1])
         ### ipad case ###
         probabilities = np.array([[0.07, 0.05, 0.06, 0.12, 0.7],
@@ -212,42 +212,42 @@ if __name__ == '__main__':
         item = 'ipad'  # total num of ratings across all items is 650, minimum is 60
         ### ipad case ###
         ### car phone holder ###
-        probabilities = np.array([[0.05, 0.02, 0.04, 0.08, 0.81],
-                                  [0.06, 0.03, 0.05, 0.1, 0.76],
-                                  [0.05, 0.03, 0.07, 0.15, 0.7],
-                                  [0.04, 0.06, 0.07, 0.16, 0.67],
-                                  [0.06, 0.03, 0.08, 0.13, 0.7]])
-        best = np.max(np.dot(probabilities, elements))
-        item = 'phoneHolder'  # total num of ratings across all items is 37k, minimum is 800
+        # probabilities = np.array([[0.05, 0.02, 0.04, 0.08, 0.81],
+        #                           [0.06, 0.03, 0.05, 0.1, 0.76],
+        #                           [0.05, 0.03, 0.07, 0.15, 0.7],
+        #                           [0.04, 0.06, 0.07, 0.16, 0.67],
+        #                           [0.06, 0.03, 0.08, 0.13, 0.7]])
+        # best = np.max(np.dot(probabilities, elements))
+        # item = 'phoneHolder'  # total num of ratings across all items is 37k, minimum is 800
         ### car phone holder ###
         ### iphone case ###
-        probabilities = np.array([[0.02, 0.02, 0.05, 0.13, 0.78],
-                                  [0.06, 0.05, 0.08, 0.14, 0.67],
-                                  [0.04, 0.03, 0.07, 0.15, 0.71],
-                                  [0.05, 0.03, 0.07, 0.16, 0.69],
-                                  [0.03, 0.02, 0.05, 0.14, 0.76]])
-        best = np.max(np.dot(probabilities, elements))
-        item = 'iphone'  # total num of ratings across all items is 62k, minimum is 5k
+        # probabilities = np.array([[0.02, 0.02, 0.05, 0.13, 0.78],
+        #                           [0.06, 0.05, 0.08, 0.14, 0.67],
+        #                           [0.04, 0.03, 0.07, 0.15, 0.71],
+        #                           [0.05, 0.03, 0.07, 0.16, 0.69],
+        #                           [0.03, 0.02, 0.05, 0.14, 0.76]])
+        # best = np.max(np.dot(probabilities, elements))
+        # item = 'iphone'  # total num of ratings across all items is 62k, minimum is 5k
         ### iphone case ###
         ### dashcam ###
-        # probabilities = np.array([[0.08, 0.05, 0.06, 0.19, 0.62],
-        #                           [0.12, 0.06, 0.08, 0.18, 0.56],
-        #                           [0.07, 0.02, 0.06, 0.22, 0.63],
-        #                           [0.07, 0.03, 0.06, 0.14, 0.7],
-        #                           [0.05, 0.01, 0.06, 0.26, 0.62]])
-        # best = np.max(np.dot(probabilities, elements))
-        # item = 'dashcam'  # total num of ratings across all items is 3k, minimum is 250
+        probabilities = np.array([[0.08, 0.05, 0.06, 0.19, 0.62],
+                                  [0.12, 0.06, 0.08, 0.18, 0.56],
+                                  [0.07, 0.02, 0.06, 0.22, 0.63],
+                                  [0.07, 0.03, 0.06, 0.14, 0.7],
+                                  [0.05, 0.01, 0.06, 0.26, 0.62]])
+        best = np.max(np.dot(probabilities, elements))
+        item = 'dashcam'  # total num of ratings across all items is 3k, minimum is 250
         ### dashcam ###
 
 
-        ADAETC_ = dFA.ADAETC(probabilities, numIns, endSim, K_list, T_list, best)
+        ADAETC_ = dFA.ADAETC(probabilities, numIns, endSim, K_list, T_list, best, ucbPart=1)
         ETC_ = dFA.ETC(probabilities, numIns, endSim, K_list, T_list, best)
         UCB1_stopping_ = dFA.UCB1_stopping(probabilities, numIns, endSim, K_list, T_list, best, improved=True, ucbPart=1)
         TS = dFA.thompson(probabilities, numIns, endSim, K_list, T_list, best)
         naiveUCB1_ = dFA.naiveUCB1(probabilities, numIns, endSim, K_list, T_list, best, improved=True, ucbPart=1)
 
         params_ = {'numOpt': 1, 'alpha': 1, 'totalSim': item,
-                   'numArmDists': 100, 'c': 4, 'delta': 0, 'm': 1, 'Switch': 'no', 'NADA': 'no'}
+                   'numArmDists': numIns, 'c': 4, 'delta': 0, 'm': 1, 'Switch': 'no', 'NADA': 'no'}
         _ = None
         for i in range(2):
             plot_fixed_m(i, K_list, T_list, naiveUCB1_, TS, ADAETC_, ETC_,

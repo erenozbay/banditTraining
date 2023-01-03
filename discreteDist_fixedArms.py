@@ -370,7 +370,7 @@ def ETC(armInstances, numIns, endSim, K_list, T_list, best, verbose=True, pullDi
             'standardError_cumReg': stError_cumReg}
 
 
-def ADAETC_sub(arms, K, T, RADA=False):
+def ADAETC_sub(arms, K, T, ucbPart, RADA=False):
     empirical_mean = np.zeros(K)
     pulls = np.zeros(K)
     indexhigh = np.zeros(K)
@@ -389,7 +389,7 @@ def ADAETC_sub(arms, K, T, RADA=False):
             cumulative_reward[pull] += rew
             pulls[pull] += 1
             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-            up = 2 * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
+            up = ucbPart * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
             indexhigh[pull] = empirical_mean[pull] + up * (pullEach > pulls[pull])
             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull]) * (up > 0)
         else:
@@ -398,7 +398,7 @@ def ADAETC_sub(arms, K, T, RADA=False):
             cumulative_reward[pull] += rew
             pulls[pull] += 1
             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
-            up = 2 * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
+            up = ucbPart * np.sqrt(max(np.log(T / (K_inUCB * np.power(pulls[pull], 3 / 2))), 0) / pulls[pull])
             indexhigh[pull] = empirical_mean[pull] + up * (pullEach > pulls[pull])
             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull]) * (up > 0)
 
@@ -418,8 +418,9 @@ def ADAETC_sub(arms, K, T, RADA=False):
             "pulls": pulls}
 
 
-def ADAETC(armInstances, numIns, endSim, K_list, T_list, best, verbose=True):
+def ADAETC(armInstances, numIns, endSim, K_list, T_list, best, ucbPart=2, verbose=True):
     # fix K and vary T values
+    print("UCB part is ", ucbPart)
     K = K_list[0]
     numT = len(T_list)
     numInstance = numIns
@@ -446,7 +447,7 @@ def ADAETC(armInstances, numIns, endSim, K_list, T_list, best, verbose=True):
             arms = armInstances
 
             for j in range(endSim):
-                res = ADAETC_sub(arms, K, T)
+                res = ADAETC_sub(arms, K, T, ucbPart)
                 cumulative_reward = res['cumulative_reward']
                 pulls = res['pulls']
                 pull_arm = np.argmax(pulls)
