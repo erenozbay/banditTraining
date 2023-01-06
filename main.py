@@ -19,7 +19,7 @@ def rotting(K_list_, T_list_, numArmDists_, endSim_, alpha__, beta__, pw_):
 
 
 def mEqOne_varyGapPlots(K_list_, T_list_, endSim_, alpha__, numOpt_=1, generateIns_=2,
-                    rng=11, ucbSim=True, justUCB='no'):
+                    rng=11, ucbSim=True, justUCB='no', NADA=False):
     T_list_raw = deepcopy(T_list_)
 
     for t in range(len(T_list_raw)):
@@ -47,16 +47,14 @@ def mEqOne_varyGapPlots(K_list_, T_list_, endSim_, alpha__, numOpt_=1, generateI
                 res = store_res(res, generateIns_, i, ADAETC_, 'ADAETC')
                 ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
                 res = store_res(res, generateIns_, i, ETC_, 'ETC')
-                # NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
-                # res = store_res(res, generateIns_, i, NADAETC_, 'NADAETC')
-                UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=False, ucbPart=1)
+                UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=False, ucbPart=1, NADA=NADA)
                 res = store_res(res, generateIns_, i, UCB1_stopping_, 'UCB1-s')
                 # SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c=4)
                 # res = store_res(res, generateIns_, i, SuccElim_, 'SuccElim')
         print("took " + str(time.time() - start_) + " seconds")
 
         params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'numSim': endSim_,
-                   'numArmDists': generateIns_}
+                   'numArmDists': generateIns_, 'NADA': NADA}
 
 
         plot_varying_delta(K_list_[0], T_list_[0], res, delt, params_, title='Regret')
@@ -64,8 +62,8 @@ def mEqOne_varyGapPlots(K_list_, T_list_, endSim_, alpha__, numOpt_=1, generateI
 
 
 def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
-           plots=True, ucbSim=True, improved=False, fixed='whatever', justUCB='no', Switch='no', NADA='yes', fn=1):
-    print("Running m = 1, justUCB: " + justUCB + ", Switch: " + Switch + ", NADA: " + NADA, " improved?", improved)
+           plots=True, ucbSim=True, improved=False, fixed='whatever', justUCB='no', Switch='no', NADA=False, fn=1):
+    print("Running m = 1, justUCB: " + justUCB + ", Switch: " + Switch + ", NADA: ", NADA, " improved?", improved)
     constant_c = 4
     start_ = time.time()
     if fixed == 'Gap':
@@ -110,21 +108,19 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
     if justUCB == 'no':
         print("starting TS")
         TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
-        # if NADA == 'yes':
-        #     NADAETC_ = fA.NADAETC(armInstances_, endSim_, K_list_, T_list_)
-        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
+        UCB1_stopping_ = fA.UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1, NADA=NADA)
         ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
         ETC_ = fA.ETC(armInstances_, endSim_, K_list_, T_list_)
         # SuccElim_ = fA.SuccElim(armInstances_, endSim_, K_list_, T_list_, constant_c)
     if ucbSim:
         naiveUCB1_ = fA.naiveUCB1(armInstances_, endSim_, K_list_, T_list_, improved=improved, ucbPart=1)
-        # if justUCB != 'no':
-        #     print("RUNNING ADA-ETC HERE w UCB1 and TS and BAI_ETC!!!!")
-        #     ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
-        #     print("starting BAI-ETC")
-        #     BAI_ETC = fA.bai_etc(armInstances_, endSim_, K_list_, T_list_)
-        #     print("starting TS")
-        #     TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
+        if justUCB != 'no':
+            print("RUNNING ADA-ETC HERE w UCB1 and TS and BAI_ETC!!!!")
+            ADAETC_ = fA.ADAETC(armInstances_, endSim, K_list_, T_list_)
+            print("starting BAI-ETC")
+            BAI_ETC = fA.bai_etc(armInstances_, endSim_, K_list_, T_list_)
+            print("starting TS")
+            TS = fA.thompson(armInstances_, endSim_, K_list_, T_list_)
 
     print("took " + str(time.time() - start_) + " seconds")
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
@@ -134,20 +130,19 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
         a = 0 if ucbSim else 1
         if justUCB == 'no':
             for i in range(a, 2):
-                plot_fixed_m(i, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, ETC_,
-                             NADAETC_, UCB1_stopping_, SuccElim_, Switch_, params_)
+                plot_fixed_m(i, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, ETC_, UCB1_stopping_, SuccElim_, params_)
+            plot_fixed_m(-1, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, ETC_, UCB1_stopping_, SuccElim_, params_)
         if ucbSim and (justUCB == 'no'):
-            plot_fixed_m(3, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, ETC_,
-                         NADAETC_, UCB1_stopping_, SuccElim_, Switch_, params_)
+            plot_fixed_m(3, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, ETC_, UCB1_stopping_, SuccElim_, params_)
         if Switch == 'yes':
-            plot_fixed_m(4, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, _, Switch_, params_)
+            plot_fixed_m(4, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, params_)
             # plot_fixed_m(5, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, _, Switch_, params_)
         if ucbSim and (justUCB == 'yes'):
-            plot_fixed_m(4, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, _, _, params_, BAI_ETC)
-            plot_fixed_m(5, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, _, _, params_, BAI_ETC)
+            plot_fixed_m(4, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, params_, BAI_ETC)
+            plot_fixed_m(5, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, params_, BAI_ETC)
 
 
-def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt_, improved=True, NADA='no'):
+def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt_, improved=True, UCBin=True, NADA=False):
     print("Running m =", m_)
     start_ = time.time()
     if numOpt_ == 1:
@@ -157,41 +152,43 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
                                                    numOpt_, delt_, verbose=True)
         print(str(numOpt_) + ' optimal arms')
 
-    m_NADAETC_ = None
-    m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1)
-    m_ADAETC_ = fA.m_ADAETC(armInstances_, endSim, K_list_, T_list_, m_)
+    m_naiveUCB1 = None
+    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1, NADA=NADA)
+    if UCBin:
+        m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1)
+    m_ADAETC_ = fA.m_ADAETC(armInstances_, endSim_, K_list_, T_list_, m_, ucbPart=2)
     RADAETC_ = fA.RADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
     m_ETC_ = fA.m_ETC(armInstances_, endSim_, K_list_, T_list_, m_)
-    # if NADA == 'yes':
-    #     m_NADAETC_ = fA.m_NADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
-    m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1)
     print("took " + str(time.time() - start_) + " seconds")
 
     params_ = {'numOpt': numOpt_, 'alpha': alpha__, 'totalSim': endSim_,
                'numArmDists': numArmDists_, 'c': 4, 'delta': delt_, 'm': m_, 'NADA': NADA, 'Switch': 'no'}
 
     # first argument is set to 2 to use the general m plots
-    plot_fixed_m(2, K_list_, T_list_, m_naiveUCB1, None, m_ADAETC_, m_ETC_, m_NADAETC_, m_UCB1_stopping_, RADAETC_,
-                 None, params_)
+    plot_fixed_m(2, K_list_, T_list_, m_naiveUCB1, None, m_ADAETC_, m_ETC_, m_UCB1_stopping_, RADAETC_, params_)
 
 
 if __name__ == '__main__':
-    K_list = np.array([6]) #  np.array([8])
-    T_list = np.arange(1, 11) * 100  # np.array([100])  # np.array([15000])
+
+
+    K_list = np.array([6])  # np.array([8])
+    T_list = np.array([100])  # np.arange(1, 11) * 100  #np.array([15000])
     m = 1
     alpha_ = 0
     numArmDists = 100
     endSim = 50
-    doing = 'amazon'  # 'm1', 'mGeq1', 'm1varyGap', 'market', 'rott', 'amazon'
+    doing = 'm1'  # 'm1', 'mGeq1', 'm1varyGap', 'market', 'rott', 'amazon'
 
     if doing == 'amazon':
+        print(doing)
         doThis(doing)
         exit()
     elif doing == 'market':
+        print(doing)
         doThis(doing)
         exit()
 
-    # chart('rewardGen')
+    # chart('mEq1')
     # exit()
 
     print("m ", m, " K ", K_list, " alpha", alpha_)
@@ -204,13 +201,13 @@ if __name__ == '__main__':
     elif doing == 'mGeq1':
         # fixed mean rewards throughout, m > 1
         mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_,
-                 numOpt_=1, delt_=0, improved=True, NADA='no')
+                 numOpt_=1, delt_=0, improved=True, NADA=False)
 
     elif doing == 'm1varyGap':
         # fixed means but difference is specified between two best arms, varying difference between means, m = 1
         # endSim should be 1, numArmDists should be multiple
         mEqOne_varyGapPlots(K_list, T_list, endSim, alpha_,
-                        numOpt_=2, generateIns_=numArmDists, rng=101, ucbSim=True, justUCB='no')
+                        numOpt_=1, generateIns_=numArmDists, rng=101, ucbSim=True, justUCB='no')
         # mEqOne_varyGapPlots(K_list, T_list, endSim, alpha_,
         #                 numOpt_=2, generateIns_=numArmDists, rng=11, ucbSim=True, justUCB='no')
         # generateIns_ takes the place of running with multiple arm instances
@@ -227,21 +224,49 @@ if __name__ == '__main__':
         # larger pw means higher variance in mean changes
 
 
-    # mvals = np.array([2, 2, 4])
-    # Kvals = np.array([4, 8, 8])
-    # for i in range(3):
+
+    # numArmDists = 200
+    # endSim = 50
+    # mvals = np.array([1, 1])  # np.array([2, 2, 4])
+    # Kvals = np.array([4, 8])  # np.array([4, 8, 8])
+    # for i in range(len(mvals)):
     #     K_list = np.array([Kvals[i]])
     #     m = mvals[i]
     #     T_list = np.arange(1, 11) * 100
-    #     numArmDists = 200
-    #     endSim = 50
+    #
     #     for j in range(2):
     #         alpha_ = 0 * (j == 0) + 0.4 * (j == 1)
     #         print("m ", m, " K ", K_list, " alpha", alpha_)
-    #         # mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
-    #         #        numOpt_=1, delt_=0, plots=True, ucbSim=True, improved=False, fixed='no', justUCB='no', Switch='no',
-    #         #        NADA='no')
-    #         mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_, numOpt_=1, delt_=0, improved=False, NADA='no')
+    #         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
+    #                numOpt_=1, delt_=0, plots=False, ucbSim=False, improved=False, fixed='no', justUCB='no', Switch='no',
+    #                NADA=True)
+    # mvals = np.array([2, 2, 4])
+    # Kvals = np.array([4, 8, 8])
+    # for i in range(len(mvals)):
+    #     K_list = np.array([Kvals[i]])
+    #     m = mvals[i]
+    #     T_list = np.arange(1, 11) * 100
+    #     for j in range(2):
+    #         alpha_ = 0 * (j == 0) + 0.4 * (j == 1)
+    #         print("m ", m, " K ", K_list, " alpha", alpha_)
+    #         mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_, numOpt_=1, delt_=0, improved=False,
+    #                  UCBin=True, NADA=True)
+    # exit()
+    # mGeneral(np.array([8]), np.arange(1, 16) * 200, 200, 50, 4, 0, numOpt_=1, delt_=0, improved=False,
+    #                           UCBin=True, NADA=True)
+    # exit()
+    # K_list = np.array([2, 4, 4]) #  np.array([8])
+    # T_list =  np.array([100])  # np.arange(1, 11) * 100  #np.array([15000])
+    # m = 1
+    # alpha_ = 0
+    # numArmDists = 100
+    # endSim = 50
+    # for i in range(len(K_list)):
+    #     numOpt_ = 1 * (i <= 1) + 2 * (i == 2)
+    #     mEqOne_varyGapPlots(np.array([K_list[i]]), T_list, endSim, alpha_,
+    #                         numOpt_, generateIns_=numArmDists, rng=101, ucbSim=True, justUCB='no', NADA=True)
+    # exit()
+
 
     # ucb for large T w/ fixed gaps of order T^a
     # mEqOne(np.array([2]), np.arange(8, 11) * 4000, 50, 50, 0,

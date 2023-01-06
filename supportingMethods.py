@@ -30,6 +30,7 @@ def store_res(res_, generateIns__, dif, inputDict_, key_):
 def plot_varying_delta(K_list_, T_list, res_, delta, params_, title = 'Regret'):
     numOpt_, alpha__, totSims_, numArmDists_ = params_['numOpt'], params_['alpha'], \
         params_['numSim'], params_['numArmDists']
+    NADAin = params_['NADA']
     naiveUCB1_ = res_['UCB1']
     ADAETC_ = res_['ADAETC']
     ETC_ = res_['ETC']
@@ -55,7 +56,10 @@ def plot_varying_delta(K_list_, T_list, res_, delta, params_, title = 'Regret'):
         plt.plot(delta, ETC_['Regret'], color='mediumseagreen', label='ETC')
         # plt.errorbar(delta, ETC_['Regret'], yerr=ETC_['standardError'],
         #              color='mediumseagreen', fmt='o', markersize=sizes, capsize=sizes)
-        plt.plot(delta, UCB1_stopping_['Regret'], color='navy', label='UCB1-s')
+        if NADAin:
+            plt.plot(delta, UCB1_stopping_['Regret'], color='darkorange', label='NADA-ETC')
+        else:
+            plt.plot(delta, UCB1_stopping_['Regret'], color='darkorange', label='UCB1-s')
         # plt.errorbar(delta, UCB1_stopping_['Regret'], yerr=UCB1_stopping_['standardError'],
         #              color='navy', fmt='o', markersize=sizes, capsize=sizes)
     elif title == 'cumReg':
@@ -71,7 +75,10 @@ def plot_varying_delta(K_list_, T_list, res_, delta, params_, title = 'Regret'):
         plt.plot(delta, TS['cumReg'], color='purple', label='TS')
         # plt.errorbar(delta, TS['cumReg'], yerr=TS['standardError_cumReg'],
         #              color='purple', fmt='o', markersize=4, capsize=4)
-        plt.plot(delta, UCB1_stopping_['cumReg'], color='navy', label='UCB1-s')
+        if NADAin:
+            plt.plot(delta, UCB1_stopping_['cumReg'], color='darkorange', label='NADA-ETC')
+        else:
+            plt.plot(delta, UCB1_stopping_['cumReg'], color='darkorange', label='UCB1-s')
         # plt.errorbar(delta, UCB1_stopping_['cumReg'], yerr=UCB1_stopping_['standardError_cumReg'],
         #              color='navy', fmt='o', markersize=4, capsize=4)
 
@@ -163,8 +170,7 @@ def plot_varying_delta_bar(res_, delt_, numSim, T_, K_, generateIns__, alp, numO
     plt.cla()
 
 
-def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
-                 NADAETC_, UCB1_stopping_, SuccElim_, Switching_, params_, BAI_ETC=None):
+def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_, UCB1_stopping_, SuccElim_, params_, BAI_ETC=None):
     numOpt_, alpha__, totSims_ = params_['numOpt'], params_['alpha'], params_['totalSim']
     numArmDists_, m_ = params_['numArmDists'], params_['m']
     NADA = params_['NADA']
@@ -183,49 +189,53 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
         plt.plot(T_list, naiveUCB1_['regret'], color='b', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
                      color='b', fmt='o', markersize=sizes, capsize=sizes)
-        plt.plot(T_list, TS['regret'], color='purple', label='TS')
-        plt.errorbar(T_list, TS['regret'], yerr=TS['standardError'],
-                     color='purple', fmt='o', markersize=sizes, capsize=sizes)
     if i < 2:  # without UCB, m=1
         sizes = 6 if len(T_list) > 10 else 4
+        if i > -1:
+            plt.plot(T_list, TS['regret'], color='purple', label='TS')
+            plt.errorbar(T_list, TS['regret'], yerr=TS['standardError'],
+                         color='purple', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, ADAETC_['regret'], color='r', label='ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
                      color='r', fmt='o', markersize=sizes, capsize=sizes)
         plt.plot(T_list, ETC_['regret'], color='mediumseagreen', label='ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
                      color='mediumseagreen', fmt='o', markersize=sizes, capsize=sizes)
-        if NADA == 'yes':
-            plt.plot(T_list, NADAETC_['regret'], color='magenta', label='NADA-ETC')
-            plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
-                         color='magenta', fmt='o', markersize=sizes, capsize=sizes)
-        plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='UCB1-s')
-        plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
-                     color='navy', fmt='o', markersize=sizes, capsize=sizes)
+        if NADA:
+            plt.plot(T_list, UCB1_stopping_['regret'], color='darkorange', label='NADA-ETC')
+            plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
+                         color='darkorange', fmt='o', markersize=sizes, capsize=sizes)
+        else:
+            plt.plot(T_list, UCB1_stopping_['regret'], color='darkorange', label='UCB1-s')
+            plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
+                         color='darkorange', fmt='o', markersize=sizes, capsize=sizes)
         # if SuccElim_ is not None:
         #     plt.plot(T_list, SuccElim_['regret'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
         #     plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
         #                  color='purple', fmt='o', markersize=sizes, capsize=sizes)
     if i == 2:  # general m plots
-        plt.plot(T_list, naiveUCB1_['regret'], color='b', label='m-UCB1')
-        plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
-                     color='b', fmt='o', markersize=4, capsize=4)
+        if naiveUCB1_ is not None:
+            plt.plot(T_list, naiveUCB1_['regret'], color='b', label='m-UCB1')
+            plt.errorbar(T_list, naiveUCB1_['regret'], yerr=naiveUCB1_['standardError'],
+                         color='b', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, ADAETC_['regret'], color='r', label='m-ADA-ETC')
         plt.errorbar(T_list, ADAETC_['regret'], yerr=ADAETC_['standardError'],
                      color='r', fmt='o', markersize=4, capsize=4)
         plt.plot(T_list, ETC_['regret'], color='mediumseagreen', label='m-ETC')
         plt.errorbar(T_list, ETC_['regret'], yerr=ETC_['standardError'],
                      color='mediumseagreen', fmt='o', markersize=4, capsize=4)
-        if NADA == 'yes':
-            plt.plot(T_list, NADAETC_['regret'], color='magenta', label='m-NADA-ETC')
-            plt.errorbar(T_list, NADAETC_['regret'], yerr=NADAETC_['standardError'],
-                         color='magenta', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, UCB1_stopping_['regret'], color='navy', label='m-UCB1-s')
-        plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
-                     color='navy', fmt='o', markersize=4, capsize=4)
-        # if SuccElim_ is not None:
-        #     plt.plot(T_list, SuccElim_['regret'], color='purple', label='RADA-ETC')  # THIS IS RADA-ETC for this part
-        #     plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
-        #                  color='purple', fmt='o', markersize=4, capsize=4)
+        if NADA:
+            plt.plot(T_list, UCB1_stopping_['regret'], color='darkorange', label='m-NADA-ETC')
+            plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
+                         color='darkorange', fmt='o', markersize=4, capsize=4)
+        else:
+            plt.plot(T_list, UCB1_stopping_['regret'], color='darkorange', label='m-UCB1-s')
+            plt.errorbar(T_list, UCB1_stopping_['regret'], yerr=UCB1_stopping_['standardError'],
+                         color='darkorange', fmt='o', markersize=4, capsize=4)
+        if SuccElim_ is not None:
+            plt.plot(T_list, SuccElim_['regret'], color='purple', label='RADA-ETC')  # THIS IS RADA-ETC for this part
+            plt.errorbar(T_list, SuccElim_['regret'], yerr=SuccElim_['standardError'],
+                         color='purple', fmt='o', markersize=4, capsize=4)
     if i == 3:  # cumulative regret plots for m=1
         plt.plot(T_list, naiveUCB1_['cumReg'], color='b', label='UCB1')
         plt.errorbar(T_list, naiveUCB1_['cumReg'], yerr=naiveUCB1_['standardError_cumReg'],
@@ -239,13 +249,14 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
         plt.plot(T_list, TS['cumReg'], color='purple', label='TS')
         plt.errorbar(T_list, TS['cumReg'], yerr=TS['standardError_cumReg'],
                      color='purple', fmt='o', markersize=4, capsize=4)
-        if NADA == 'yes':
-            plt.plot(T_list, NADAETC_['cumReg'], color='magenta', label='NADA-ETC')
-            plt.errorbar(T_list, NADAETC_['cumReg'], yerr=NADAETC_['standardError_cumReg'],
-                         color='magenta', fmt='o', markersize=4, capsize=4)
-        plt.plot(T_list, UCB1_stopping_['cumReg'], color='navy', label='UCB1-s')
-        plt.errorbar(T_list, UCB1_stopping_['cumReg'], yerr=UCB1_stopping_['standardError_cumReg'],
-                     color='navy', fmt='o', markersize=4, capsize=4)
+        if NADA:
+            plt.plot(T_list, UCB1_stopping_['cumReg'], color='darkorange', label='NADA-ETC')
+            plt.errorbar(T_list, UCB1_stopping_['cumReg'], yerr=UCB1_stopping_['standardError_cumReg'],
+                         color='darkorange', fmt='o', markersize=4, capsize=4)
+        else:
+            plt.plot(T_list, UCB1_stopping_['cumReg'], color='darkorange', label='UCB1-s')
+            plt.errorbar(T_list, UCB1_stopping_['cumReg'], yerr=UCB1_stopping_['standardError_cumReg'],
+                         color='darkorange', fmt='o', markersize=4, capsize=4)
         # if SuccElim_ is not None:
         #     plt.plot(T_list, SuccElim_['cumReg'], color='purple', label='SuccElim (c=' + str(constant_c) + ')')
         #     plt.errorbar(T_list, SuccElim_['cumReg'], yerr=SuccElim_['standardError'],
@@ -299,9 +310,12 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
     if i == 0:  # with UCB, m = 1
         plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
                     '_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '.eps', format='eps', bbox_inches='tight')
-    elif i < 2:  # without UCB, m = 1
+    elif i == 1:  # without UCB, m = 1
         plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
                     '_noUCB_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '.eps', format='eps', bbox_inches='tight')
+    elif i == -1:  # without UCB, m = 1
+        plt.savefig('res/mEquals1_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' + str(alpha__) +
+                    '_noUCBnoTS_sim' + str(totSims_) + '_armDist' + str(numArmDists_) + '.eps', format='eps', bbox_inches='tight')
     elif i == 2:  # general m
         plt.savefig('res/mEquals' + str(m_) + '_' + str(numOpt_) + 'optArms_K' + str(K_list_[0]) + '_alpha' +
                     str(alpha__) + '_sim' + str(totSims_) + '_armDist' + str(numArmDists_) +
@@ -321,7 +335,7 @@ def plot_fixed_m(i, K_list_, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
 
 
 def plot_market_mBased(algs, m, K, T, results, totalCohorts, numSim, replicate, correction, exploreLess, normalized=False):
-    colors = ['red', 'navy', 'mediumseagreen', 'magenta', 'purple', 'blue']
+    colors = ['red', 'darkorange', 'mediumseagreen', 'magenta', 'purple', 'blue']
     labels = list(algs.keys())
     counter = 0
     plt.figure(figsize=(7, 5), dpi=100)

@@ -41,10 +41,12 @@ class CohortGenerate:
                             up = 2 * np.sqrt(max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
                             self.indexhigh[pull] = self.empirical_mean[pull] + up * boolie
                             self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
-                        elif self.alg == 'UCB1-s':
+                        elif self.alg == 'UCB1-s' or self.alg == 'NADA-ETC':
                             confidence = 1 * np.sqrt(np.log(self.T) / np.power(self.pulls[pull], 1)) * boolie
                             self.indexhigh[pull] = self.empirical_mean[pull] + confidence
                             self.indexlow[pull] = self.empirical_mean[pull] - confidence
+                            if self.alg == 'NADA-ETC':
+                                self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
             else:
                 pullset = np.argsort(self.pulls) if not exploiting else self.pullset
                 for b in range(budget):
@@ -70,10 +72,12 @@ class CohortGenerate:
                     max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
                 self.indexhigh[pull] = self.empirical_mean[pull] + up * boolie
                 self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
-            elif self.alg == 'UCB1-s':
+            elif self.alg == 'UCB1-s' or self.alg == 'NADA-ETC':
                 confidence = 1 * np.sqrt(np.log(self.T) / np.power(self.pulls[pull], 1)) * boolie
                 self.indexhigh[pull] = self.empirical_mean[pull] + confidence
                 self.indexlow[pull] = self.empirical_mean[pull] - confidence
+                if self.alg == 'NADA-ETC':
+                    self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
             elif self.alg == 'ETC':
                 self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
                 self.indexhigh[pull] = self.empirical_mean[pull]

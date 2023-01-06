@@ -51,14 +51,14 @@ def doThis(doing):
         item = 'dashcam'  # total num of ratings across all items is 3k, minimum is 250
         ### dashcam ###
         ### snow shovel ###
-        # probabilities = np.array([[0.13, 0.09, 0.04, 0.18, 0.56],
-        #                           [0.08, 0.08, 0.1, 0.13, 0.61],
-        #                           [0.03, 0.03, 0.06, 0.18, 0.7],
-        #                           [0.02, 0.01, 0.02, 0.07, 0.88],
-        #                           [0.03, 0.03, 0.08, 0.17, 0.69],
-        #                           [0.13, 0.06, 0.18, 0.18, 0.45]])
-        # best = np.max(np.dot(probabilities, elements))
-        # item = 'shovel'  # total num of ratings across all items is 650, minimum is 60
+        probabilities = np.array([[0.13, 0.09, 0.04, 0.18, 0.56],
+                                  [0.08, 0.08, 0.1, 0.13, 0.61],
+                                  [0.03, 0.03, 0.06, 0.18, 0.7],
+                                  [0.02, 0.01, 0.02, 0.07, 0.88],
+                                  [0.03, 0.03, 0.08, 0.17, 0.69],
+                                  [0.13, 0.06, 0.18, 0.18, 0.45]])
+        best = np.max(np.dot(probabilities, elements))
+        item = 'shovel'  # total num of ratings across all items is 650, minimum is 60
         ### snow shovel ###
         ### leaf blower ###
         # probabilities = np.array([[0.03, 0.02, 0.07, 0.19, 0.69],
@@ -81,28 +81,29 @@ def doThis(doing):
         # item = 'humidifier'  # total num of ratings across all items is 650, minimum is 60
         ### humidifier ###
 
+        naiveUCB1_ = None
+        TS = dFA.thompson(probabilities, numIns * 2, 1, K_list, T_list, best)
         ADAETC_ = dFA.ADAETC(probabilities, numIns, 1, K_list, T_list, best, ucbPart=2)
         ETC_ = dFA.ETC(probabilities, numIns, 1, K_list, T_list, best)
-        UCB1_stopping_ = dFA.UCB1_stopping(probabilities, numIns, 1, K_list, T_list, best, improved=False, ucbPart=1)
-        TS = dFA.thompson(probabilities, numIns, 1, K_list, T_list, best)
+        UCB1_stopping_ = dFA.UCB1_stopping(probabilities, numIns, 1, K_list, T_list, best, improved=False, ucbPart=1, NADA=True)
         naiveUCB1_ = dFA.naiveUCB1(probabilities, numIns, 1, K_list, T_list, best, improved=False, ucbPart=1)
 
         params_ = {'numOpt': 1, 'alpha': 1, 'totalSim': item,
                    'numArmDists': numIns, 'm': 1, 'Switch': 'no', 'NADA': 'no'}
         _ = None
         for i in range(2):
-            plot_fixed_m(i, K_list, T_list, naiveUCB1_, TS, ADAETC_, ETC_,
-                         _, UCB1_stopping_, _, _, params_)
+            plot_fixed_m(i, K_list, T_list, naiveUCB1_, TS, ADAETC_, ETC_, UCB1_stopping_, _, params_)
+        plot_fixed_m(-1, K_list, T_list, naiveUCB1_, TS, ADAETC_, ETC_, UCB1_stopping_, _, params_)
         print("took " + str(time.time() - start) + " seconds")
     elif doing == 'market':
-        algs = {'ADA-ETC': {}, 'UCB1-s': {}, 'ETC': {}}
+        algs = {'NADA-ETC': {}}  # {'ADA-ETC': {}, 'UCB1-s': {}, 'ETC': {}}
         numSim = 10
         replicate = 2
         excels = False if numSim > 1 or replicate > 1 else True
         figs = False  # do you want the figures or not
         totalWorkers = 500
-        T = 200
-        K = 20
+        T = 100
+        K = 10
         m = 5
         totalC = 100  # int(totalWorkers / m)  # total cohorts
         totalPeriods = totalC * T

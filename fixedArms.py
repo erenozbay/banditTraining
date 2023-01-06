@@ -832,8 +832,9 @@ def ADAETC(armInstances, endSim, K_list, T_list, ucbPart=2, verbose=True):
             'pullRatios': subOptRewards}
 
 
-def m_ADAETC(armInstances, endSim, K_list, T_list, m, verbose=True):
+def m_ADAETC(armInstances, endSim, K_list, T_list, m, ucbPart=2, verbose=True):
     # fix K and vary T values
+    print("UCB part is ", ucbPart)
     K = K_list[0]
     numT = len(T_list)
     numInstance = len(armInstances)
@@ -871,7 +872,7 @@ def m_ADAETC(armInstances, endSim, K_list, T_list, m, verbose=True):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              2 * np.sqrt(max(np.log(capT / ((K - m) * np.power(pulls[pull], 3 / 2))), 0)
+                                              ucbPart * np.sqrt(max(np.log(capT / ((K - m) * np.power(pulls[pull], 3 / 2))), 0)
                                                           / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
                             pull += 1
@@ -886,7 +887,7 @@ def m_ADAETC(armInstances, endSim, K_list, T_list, m, verbose=True):
                             pulls[pull] += 1
                             empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                             indexhigh[pull] = empirical_mean[pull] + \
-                                              2 * np.sqrt(max(np.log(capT / ((K - m) * np.power(pulls[pull], 3 / 2))), 0)
+                                              ucbPart * np.sqrt(max(np.log(capT / ((K - m) * np.power(pulls[pull], 3 / 2))), 0)
                                                           / pulls[pull]) * (pullEach > pulls[pull])
                             indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * (pullEach > pulls[pull])
 
@@ -1010,9 +1011,9 @@ def RADAETC(armInstances, endSim, K_list, T_list, m, verbose=True):
             'standardError': stError}
 
 
-def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=2, verbose=True):
+def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=2, NADA=False, verbose=True):
     # fix K and vary T values
-    print("UCB part is ", ucbPart)
+    print("UCB part is ", ucbPart, " NADA ", NADA)
     K = K_list[0]
     numT = len(T_list)
     numInstance = len(armInstances)
@@ -1063,12 +1064,18 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=
                             #                  np.sqrt(ucbPart * np.log(T / denom) / np.power(pulls[pull], 1)) * pullBool
                             indexhigh[pull] = empirical_mean[pull] + \
                                               ucbPart * np.sqrt(np.log(T / pulls[pull]) / np.power(pulls[pull], 1)) * pullBool
-                            indexlow[pull] = empirical_mean[pull] - \
+                            if NADA:
+                                indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                            else:
+                                indexlow[pull] = empirical_mean[pull] - \
                                              ucbPart * np.sqrt(np.log(T / pulls[pull]) / np.power(pulls[pull], 1)) * pullBool
                         else:
                             indexhigh[pull] = empirical_mean[pull] + \
                                               ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
-                            indexlow[pull] = empirical_mean[pull] - \
+                            if NADA:
+                                indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                            else:
+                                indexlow[pull] = empirical_mean[pull] - \
                                              ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
 
                     else:
@@ -1089,13 +1096,18 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=
                             indexhigh[pull] = empirical_mean[pull] + \
                                               ucbPart * np.sqrt(
                                 np.log(T / pulls[pull]) / np.power(pulls[pull], 1)) * pullBool
-                            indexlow[pull] = empirical_mean[pull] - \
-                                             ucbPart * np.sqrt(
-                                np.log(T / pulls[pull]) / np.power(pulls[pull], 1)) * pullBool
+                            if NADA:
+                                indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                            else:
+                                indexlow[pull] = empirical_mean[pull] - \
+                                                 ucbPart * np.sqrt(np.log(T / pulls[pull]) / np.power(pulls[pull], 1)) * pullBool
                         else:
                             indexhigh[pull] = empirical_mean[pull] + \
                                               ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
-                            indexlow[pull] = empirical_mean[pull] - \
+                            if NADA:
+                                indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                            else:
+                                indexlow[pull] = empirical_mean[pull] - \
                                              ucbPart * np.sqrt(np.log(T) / np.power(pulls[pull], 1)) * pullBool
 
                     lcb = np.argmax(indexlow)
@@ -1130,7 +1142,7 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=
         stError_cumReg[t] = np.sqrt(np.var(cumReg_sim) / numInstance)
         subOptRewards[t] = np.mean(subOptRewards_sim)
     if verbose:
-        print("UCB1 with stopping results:")
+        print("UCB1 with stopping results:") if not NADA else print("NADA-ETC results:")
         print("K: " + str(K) + ", and T: ", end=" ")
         print(T_list)
         print("Regrets", end=" ")
@@ -1157,8 +1169,8 @@ def UCB1_stopping(armInstances, endSim, K_list, T_list, improved=False, ucbPart=
             'standardError_cumReg': stError_cumReg}
 
 
-def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, improved=False, ucbPart=2, verbose=True):
-    print("UCB part is ", ucbPart)
+def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, improved=False, ucbPart=2, verbose=True, NADA=False):
+    print("UCB part is ", ucbPart, " NADA?", NADA)
     # fix K and vary T values
     K = K_list[0]
     numT = len(T_list)
@@ -1198,12 +1210,18 @@ def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, improved=False, ucb
                             if improved:
                                 indexhigh[pull] = empirical_mean[pull] + \
                                                   ucbPart * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull]) * pullBool
-                                indexlow[pull] = empirical_mean[pull] - \
-                                                 ucbPart * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull]) * pullBool
+                                if NADA:
+                                    indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                                else:
+                                    indexlow[pull] = empirical_mean[pull] - \
+                                                     ucbPart * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull]) * pullBool
                             else:
                                 indexhigh[pull] = empirical_mean[pull] + \
                                                   ucbPart * np.sqrt(np.log(capT) / pulls[pull]) * pullBool
-                                indexlow[pull] = empirical_mean[pull] - \
+                                if NADA:
+                                    indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                                else:
+                                    indexlow[pull] = empirical_mean[pull] - \
                                                  ucbPart * np.sqrt(np.log(capT) / pulls[pull]) * pullBool
 
                             pull += 1
@@ -1221,12 +1239,18 @@ def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, improved=False, ucb
                             if improved:
                                 indexhigh[pull] = empirical_mean[pull] + \
                                                   ucbPart * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull]) * pullBool
-                                indexlow[pull] = empirical_mean[pull] - \
+                                if NADA:
+                                    indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                                else:
+                                    indexlow[pull] = empirical_mean[pull] - \
                                                  ucbPart * np.sqrt(np.log(capT / pulls[pull]) / pulls[pull]) * pullBool
                             else:
                                 indexhigh[pull] = empirical_mean[pull] + \
                                                   ucbPart * np.sqrt(np.log(capT) / pulls[pull]) * pullBool
-                                indexlow[pull] = empirical_mean[pull] - \
+                                if NADA:
+                                    indexlow[pull] = empirical_mean[pull] - empirical_mean[pull] * pullBool
+                                else:
+                                    indexlow[pull] = empirical_mean[pull] - \
                                                  ucbPart * np.sqrt(np.log(capT) / pulls[pull]) * pullBool
 
                     lcb_set = np.argsort(-indexlow)
@@ -1239,12 +1263,12 @@ def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, improved=False, ucb
                         stopped = i + 1
                         break
 
-                for i in range(T - stopped):
+                if T - stopped > 0:
                     for b in range(m):
                         pull = pullset[b]
-                        rew = np.random.binomial(1, arms[pull], 1)
+                        rew = sum(np.random.binomial(1, arms[pull], int(T - stopped)))
                         cumulative_reward[pull] += rew
-                        pulls[pull] += 1
+                        pulls[pull] += int(T - stopped)
 
                 reward_sim[a] += np.mean(cumulative_reward[pullset])
                 regret_sim[a] += first_m * int(capT / m) - np.mean(cumulative_reward[pullset])
@@ -1256,7 +1280,7 @@ def m_UCB1_stopping(armInstances, endSim, K_list, T_list, m, improved=False, ucb
         regret[t] = np.mean(regret_sim)
         stError[t] = np.sqrt(np.var(regret_sim) / numInstance)
     if verbose:
-        print(str(m) + "-UCB1 with stopping results:")
+        print(str(m) + "-UCB1 with stopping results:") if not NADA else print(str(m) + "-NADA-ETC results:")
         print("K: " + str(K) + ", and T: ", end=" ")
         print(T_list)
         print("Regrets", end=" ")
