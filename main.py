@@ -142,7 +142,7 @@ def mEqOne(K_list_, T_list_, numArmDists_, endSim_, alpha__, numOpt_, delt_,
             plot_fixed_m(5, K_list_, T_list_, naiveUCB1_, TS, ADAETC_, _, _, _, params_, BAI_ETC)
 
 
-def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt_, improved=True, UCBin=True, NADA=False):
+def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt_, RADA=True, improved=True, UCBin=True, NADA=False):
     print("Running m =", m_)
     start_ = time.time()
     if numOpt_ == 1:
@@ -153,11 +153,13 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
         print(str(numOpt_) + ' optimal arms')
 
     m_naiveUCB1 = None
+    RADAETC_ = None
     m_UCB1_stopping_ = fA.m_UCB1_stopping(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1, NADA=NADA)
     if UCBin:
         m_naiveUCB1 = fA.m_naiveUCB1(armInstances_, endSim_, K_list_, T_list_, m_, improved=improved, ucbPart=1)
     m_ADAETC_ = fA.m_ADAETC(armInstances_, endSim_, K_list_, T_list_, m_, ucbPart=2)
-    RADAETC_ = fA.RADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
+    if RADA:
+        RADAETC_ = fA.RADAETC(armInstances_, endSim_, K_list_, T_list_, m_)
     m_ETC_ = fA.m_ETC(armInstances_, endSim_, K_list_, T_list_, m_)
     print("took " + str(time.time() - start_) + " seconds")
 
@@ -169,15 +171,16 @@ def mGeneral(K_list_, T_list_, numArmDists_, endSim_, m_, alpha__, numOpt_, delt
 
 
 if __name__ == '__main__':
+    # chart('fullSamplePath')
+    # exit()
 
-
-    K_list = np.array([6])  # np.array([8])
-    T_list = np.array([100])  # np.arange(1, 11) * 100  #np.array([15000])
-    m = 1
-    alpha_ = 0
-    numArmDists = 100
+    K_list = np.array([4, 8, 8])  # np.array([8])
+    T_list = np.arange(1, 11) * 100  #   #np.array([15000])
+    m = np.array([2, 2, 4])
+    alpha_ = np.array([0, 0.4])
+    numArmDists = 200
     endSim = 50
-    doing = 'm1'  # 'm1', 'mGeq1', 'm1varyGap', 'market', 'rott', 'amazon'
+    doing = 'mGeq1'  # 'm1', 'mGeq1', 'm1varyGap', 'market', 'rott', 'amazon'
 
     if doing == 'amazon':
         print(doing)
@@ -188,20 +191,22 @@ if __name__ == '__main__':
         doThis(doing)
         exit()
 
-    # chart('mEq1')
-    # exit()
+    #
 
     print("m ", m, " K ", K_list, " alpha", alpha_)
     if doing == 'm1':
         # fixed mean rewards throughout, m = 1
         mEqOne(K_list, T_list, numArmDists, endSim, alpha_,
-               numOpt_=1, delt_=0, plots=True, ucbSim=True, improved=False, fixed='no', justUCB='no', Switch='no', NADA='no')
+               numOpt_=1, delt_=0, plots=True, ucbSim=True, improved=False, fixed='no', justUCB='no',
+               Switch='no', NADA='no')
         # # fixed='Intervals' or 'Gap' or anything else
 
     elif doing == 'mGeq1':
         # fixed mean rewards throughout, m > 1
-        mGeneral(K_list, T_list, numArmDists, endSim, m, alpha_,
-                 numOpt_=1, delt_=0, improved=True, NADA=False)
+        for i in range(3):
+            for j in range(2):
+                mGeneral(np.array([K_list[i]]), T_list, numArmDists, endSim, m[i], alpha_[j],
+                         numOpt_=1, delt_=0, RADA=False, improved=False, NADA=True)
 
     elif doing == 'm1varyGap':
         # fixed means but difference is specified between two best arms, varying difference between means, m = 1

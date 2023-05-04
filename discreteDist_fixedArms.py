@@ -199,12 +199,13 @@ def naiveUCB1(armInstances, numIns, endSim, K_list, T_list, best, improved=False
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T) / pulls[pull])
                         if improved:  # , improved=False
-                            index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + \
+                                          ucbPart * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
                             # denom = np.sum(
                             #     [np.sum([min(pulls[k], np.sqrt(pulls[k] * pulls[j])) for k in range(K)]) for j in
                             #      range(K)])
                             # index[pull] = empirical_mean[pull] + np.sqrt(2 * np.log(T / max(1, denom)) / pulls[pull])
-                        prev_pull = pull
+                        # prev_pull = pull
 
                     else:
                         pull = np.argmax(index)
@@ -215,7 +216,8 @@ def naiveUCB1(armInstances, numIns, endSim, K_list, T_list, best, improved=False
                         empirical_mean[pull] = cumulative_reward[pull] / pulls[pull]
                         index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T) / pulls[pull])
                         if improved:  # , improved=False
-                            index[pull] = empirical_mean[pull] + ucbPart * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
+                            index[pull] = empirical_mean[pull] + \
+                                          ucbPart * np.sqrt(np.log(T / pulls[pull]) / pulls[pull])
                             # denom = np.sum(
                             #     [np.sum([min(pulls[k], np.sqrt(pulls[k] * pulls[j])) for k in range(K)]) for j in
                             #      range(K)])

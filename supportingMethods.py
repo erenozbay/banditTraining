@@ -347,7 +347,7 @@ def plot_market_mBased(algs, m, K, T, results, totalCohorts, numSim, replicate, 
                      fmt='o', markersize=4, capsize=4)
         counter += 1
     plt.ylabel('Reward', fontsize=13)
-    plt.xlabel('m', fontsize=13)
+    plt.xlabel('H', fontsize=13)
     title = 'marketSim/rewardGeneration' if not normalized else 'marketSim/rewardGeneration_NormalizedRewards'
     title += '_m' + str(m) + '_K' + str(K) + '_T' + str(T) + '_sim' + str(numSim) + \
             '_replication' + str(replicate) + '_' + str(totalCohorts) + 'cohorts' + '_correction' + str(correction)
