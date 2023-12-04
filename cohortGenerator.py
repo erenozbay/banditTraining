@@ -23,7 +23,6 @@ class CohortGenerate:
         self.pullset = np.zeros(m)
         self.currentReward = 0
 
-
     def returnIndices(self, budget, pullOne=-2, exploiting=False):
         if pullOne == -2:
             if self.alg != 'ETC':
@@ -38,15 +37,15 @@ class CohortGenerate:
                         self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
                         boolie = self.pullEach > self.pulls[pull]
                         if self.alg == 'ADA-ETC':
-                            up = 2 * np.sqrt(max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
+                            up = 2 * np.sqrt(
+                                max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[
+                                    pull])
                             self.indexhigh[pull] = self.empirical_mean[pull] + up * boolie
                             self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
-                        elif self.alg == 'UCB1-s' or self.alg == 'NADA-ETC':
+                        elif self.alg == 'NADA-ETC':
                             confidence = 1 * np.sqrt(np.log(self.T) / np.power(self.pulls[pull], 1)) * boolie
                             self.indexhigh[pull] = self.empirical_mean[pull] + confidence
-                            self.indexlow[pull] = self.empirical_mean[pull] - confidence
-                            if self.alg == 'NADA-ETC':
-                                self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
+                            self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
             else:
                 pullset = np.argsort(self.pulls) if not exploiting else self.pullset
                 for b in range(budget):
@@ -72,12 +71,10 @@ class CohortGenerate:
                     max(np.log(self.T / (self.K * np.power(self.pulls[pull], 3 / 2))), 0) / self.pulls[pull])
                 self.indexhigh[pull] = self.empirical_mean[pull] + up * boolie
                 self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
-            elif self.alg == 'UCB1-s' or self.alg == 'NADA-ETC':
+            elif self.alg == 'NADA-ETC':
                 confidence = 1 * np.sqrt(np.log(self.T) / np.power(self.pulls[pull], 1)) * boolie
                 self.indexhigh[pull] = self.empirical_mean[pull] + confidence
-                self.indexlow[pull] = self.empirical_mean[pull] - confidence
-                if self.alg == 'NADA-ETC':
-                    self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
+                self.indexlow[pull] = self.empirical_mean[pull] - self.empirical_mean[pull] * boolie
             elif self.alg == 'ETC':
                 self.empirical_mean[pull] = self.cumulative_reward[pull] / self.pulls[pull]
                 self.indexhigh[pull] = self.empirical_mean[pull]
@@ -115,24 +112,20 @@ class CohortGenerate:
                         break
             if budget >= self.m:  # I want to pull m arms at all times, not anything less
                 self.returnIndices(self.m)
-                self.exploit()   # check if I can exploit the next time
+                self.exploit()  # check if I can exploit the next time
 
-            return {'budget': budget,  # this budget I can use to return to the pool of jobs, maybe?
+            return {'budget': budget,  # this budget I can use to return to the pool of jobs
                     'done': done,
                     'realtime_reward': self.currentReward}  # / self.m}
 
         else:  # already in the exploitation phase
             if (self.T - sum(self.pulls)) > 0:
                 self.returnIndices(min(self.m, self.T - sum(self.pulls)), -2, True)
-                # print("Total pulls spent ", sum(self.pulls), " vs T ", self.T)
             else:
                 done = True
 
             return {'budget': budget,
                     'done': done,
-                    'final_reward': #self.T / self.m * np.sum(self.arms[np.argsort(-self.arms)[0:self.m]]) -
-                                    np.sum(self.cumulative_reward[self.pullset]),
-                    # np.mean(self.cumulative_reward[self.pullset]),
-                    'realtime_reward': self.currentReward,  # / self.m,
+                    'final_reward': np.sum(self.cumulative_reward[self.pullset]),
+                    'realtime_reward': self.currentReward,
                     'wasted_pulls': self.T - sum(self.pulls)}
-
