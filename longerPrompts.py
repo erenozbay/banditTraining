@@ -199,3 +199,78 @@ def doThis(doing):
         # plot_market_mBased(algs, m, K, T, normalizedResults2, totalC, numSim, replicate, True, normalized=True)
         #     pd.DataFrame(np.transpose(QAC[keys])).to_csv("marketSim/QAC_noCorrection_" + str(keys) + ".csv", index=False)
         #     pd.DataFrame(np.transpose(QAC2[keys])).to_csv("marketSim/QAC_Correction_" + str(keys) + ".csv", index=False)
+
+
+def amazon_(withUCB=False):
+    K_list = np.array([6])
+    T_list = np.arange(1, 11) * 100
+    numIns = 100
+    elements = np.array([0.2, 0.4, 0.6, 0.8, 1])
+    probabilities = {}
+    best = {}
+
+    # dashcam ###
+    probabilities["dashcam"] = np.array([[0.08, 0.05, 0.06, 0.19, 0.62],
+                                         [0.12, 0.06, 0.08, 0.18, 0.56],
+                                         [0.07, 0.02, 0.06, 0.22, 0.63],
+                                         [0.07, 0.03, 0.06, 0.14, 0.7],
+                                         [0.05, 0.01, 0.06, 0.26, 0.62],
+                                         [0.06, 0.05, 0.09, 0.19, 0.61]])
+    best["dashcam"] = np.max(np.dot(probabilities["dashcam"], elements))
+    # dashcam ###
+
+    # snow shovel ###
+    probabilities["shovel"] = np.array([[0.13, 0.09, 0.04, 0.18, 0.56],
+                                        [0.08, 0.08, 0.1, 0.13, 0.61],
+                                        [0.03, 0.03, 0.06, 0.18, 0.7],
+                                        [0.02, 0.01, 0.02, 0.07, 0.88],
+                                        [0.03, 0.03, 0.08, 0.17, 0.69],
+                                        [0.13, 0.06, 0.18, 0.18, 0.45]])
+    best["shovel"] = np.max(np.dot(probabilities["shovel"], elements))
+    # snow shovel ###
+
+    # leaf blower ###
+    probabilities["blower"] = np.array([[0.03, 0.02, 0.07, 0.19, 0.69],
+                                        [0.06, 0.06, 0.08, 0.19, 0.61],
+                                        [0.15, 0.07, 0.1, 0.19, 0.49],
+                                        [0.1, 0.04, 0.07, 0.15, 0.64],
+                                        [0.07, 0.03, 0.08, 0.17, 0.65],
+                                        [0.12, 0.07, 0.1, 0.19, 0.52]])
+    best["blower"] = np.max(np.dot(probabilities["blower"], elements))
+    # leaf blower ###
+
+    # humidifier ###
+    probabilities["humidifier"] = np.array([[0.05, 0.03, 0.05, 0.15, 0.72],
+                                            [0.04, 0.02, 0.05, 0.13, 0.76],
+                                            [0.15, 0.06, 0.08, 0.14, 0.57],
+                                            [0.08, 0.04, 0.08, 0.16, 0.64],
+                                            [0.09, 0.03, 0.05, 0.12, 0.71],
+                                            [0.11, 0.03, 0.07, 0.14, 0.65]])
+    best["humidifier"] = np.max(np.dot(probabilities["humidifier"], elements))
+    # humidifier ###
+
+    def algsAndFigs(itemList, figs=1, title_="figs/fig6/"):
+        for item in itemList:
+            TS = dFA.thompson(probabilities[item], numIns * 2, 1, K_list, T_list, best[item])
+            ADAETC_ = dFA.ADAETC(probabilities[item], numIns, 1, K_list, T_list, best[item], ucbPart=2)
+            ETC_ = dFA.ETC(probabilities[item], numIns, 1, K_list, T_list, best[item])
+            UCB1_stopping_ = dFA.UCB1_stopping(probabilities[item], numIns, 1, K_list, T_list, best[item],
+                                               improved=False, ucbPart=1, NADA=True)
+            naiveUCB1_ = dFA.naiveUCB1(probabilities[item], numIns, 1, K_list, T_list, best[item],
+                                       improved=False, ucbPart=1)
+
+            params_ = {'numOpt': 1, 'alpha': 1, 'totalSim': item,
+                       'numArmDists': numIns, 'm': 1, 'NADA': 'no', 'title': title_}
+
+            plot_fixed_m(figs, K_list, T_list, naiveUCB1_, TS, ADAETC_, ETC_, UCB1_stopping_, params_)
+            # if figs = 0, then the figure is with UCB1 and TS
+            # if figs = 1, then the figure is only with TS
+            # if figs = -1, then the figure is without UCB1 and TS
+
+    if withUCB:
+        itemList_ = ['shovel']
+        algsAndFigs(itemList=itemList_, figs=0, title_="figs/figAmazonUCB/")
+
+    else:
+        itemList_ = ['dashcam', 'shovel', 'blower', 'humidifier']
+        algsAndFigs(itemList=itemList_)
